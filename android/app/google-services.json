@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1019649958325",
+    "project_id": "cokana-e870f",
+    "storage_bucket": "cokana-e870f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1019649958325:android:589c9fb06d1c515a4279fc",
+        "android_client_info": {
+          "package_name": "com.cokanaproject"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAW0RfraDlqeC0mNio8E_6oYqVUsCz77hg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
