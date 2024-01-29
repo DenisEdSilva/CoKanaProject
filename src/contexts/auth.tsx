@@ -34,7 +34,7 @@ interface UserProfile {
 }
 
 interface ProductsProps {
-    category: string;
+    productCategory: string;
     productName: string;
     productQuantity: string;
     productPrice: string;
@@ -49,7 +49,8 @@ interface AuthContextType {
     signOut: () => Promise<void>;
     signUp: ({ role, name, email, password }: UserSignUp) => Promise<void>;
     storageUser: (data: User) => Promise<void>;
-    registerProduct: ({ category, productName, productQuantity, productPrice }: ProductsProps) => Promise<void>;
+    registerProduct: ({ productCategory, productName, productQuantity, productPrice }: ProductsProps) => Promise<void>;
+    registerCategory: ({ newCategory }: { newCategory: string }) => Promise<void>;
   }
 
   export const AuthContext = createContext<AuthContextType>({
@@ -62,6 +63,7 @@ interface AuthContextType {
     user: null,
     storageUser: async () => {},
     registerProduct: async () => {},
+    registerCategory: async () => {},
   });
 
 export default function AuthProvider({ children }:childrenProps) {
@@ -156,9 +158,15 @@ export default function AuthProvider({ children }:childrenProps) {
             })
     }
 
-    async function registerProduct( { category, productName, productQuantity, productPrice}: ProductsProps) {{
+    async function registerCategory({newCategory}: {newCategory: string}) {
+        await firestore().collection('categories').add({
+            category: newCategory
+        })
+    }
+
+    async function registerProduct( { productCategory, productName, productQuantity, productPrice}: ProductsProps) {{
         await firestore().collection('products').add({
-            category: category,
+            category: productCategory,
             name: productName,
             quantity: productQuantity,
             price: productPrice
@@ -178,7 +186,8 @@ export default function AuthProvider({ children }:childrenProps) {
         signOut,
         signUp,
         storageUser,
-        registerProduct
+        registerProduct,
+        registerCategory
       };
 
     return (

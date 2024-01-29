@@ -1,22 +1,51 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text,  TextInput, TouchableOpacity} from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useAuth } from "../../../contexts/auth";
+import firestore from '@react-native-firebase/firestore';
+
+interface Category {
+    id: string;
+    category: string;
+}
 
 export function NewProduct() {
-    const [category, setCategory] = useState("Bebidas");
+    const [category, setCategory] = useState<Category[]>([]);
+    console.log(category)
+    const [productCategory, setProductCategory] = useState("");
+    console.log(productCategory)
     const [productName, setProductName] = useState("");
     const [productQuantity, setQuantity] = useState("");
     const [productPrice, setPrice] = useState("");
     const { registerProduct } = useAuth();
-    
+
+    useEffect(() => {
+        const unsubscribe = firestore()
+        .collection('categories')
+        .onSnapshot((snapshot) => {
+            const newCategories = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as Category[];
+          setCategory(newCategories);
+
+          if (newCategories.length > 0) {
+            setProductCategory(newCategories[0].category);
+          }
+
+        }, (error) => {
+          console.error(error);
+        });
+      return () => unsubscribe();
+    }, []);
+
     function handleRegisterProduct() {
         if (!productName || !productQuantity || !productPrice) {
             console.log("Preencha todos os campos");
             return;
         }
-        const product = {category, productName, productQuantity, productPrice};
-        registerProduct(product);
+        const product = {productCategory, productName, productQuantity, productPrice};
+        registerProduct(product)
     }
 
     const handlePriceChange = (text: string) => {
@@ -30,8 +59,7 @@ export function NewProduct() {
             num = num.slice(0, -2) + '.' + num.slice(-2);
         }
         const numFloat = parseFloat(num).toFixed(2);
-        const formatted = `R$ ${numFloat}`;
-        setPrice(formatted);
+        setPrice(numFloat);
     }
 
 
@@ -50,11 +78,12 @@ export function NewProduct() {
                 }} 
             >
                 <Picker
-                    selectedValue={category}
-                    onValueChange={(itemValue) => setCategory(itemValue)}
+                    selectedValue={productCategory}
+                    onValueChange={(itemValue, itemIndex) => setProductCategory(itemValue)}
                 >
-                    <Picker.Item label="Bebidas" value="Bebidas"/>
-                    <Picker.Item label="Comidas" value="Comidas"/>
+                    {category.map((category) => (
+                        <Picker.Item key={category.id} label={category.category} value={category.category} />    
+                    ))}
                 </Picker>
             </View>
             <TextInput 
@@ -101,7 +130,7 @@ export function NewProduct() {
                 keyboardType="numeric"
                 maxLength={10}
                 placeholder="Preço" 
-                value={productPrice} 
+                value={`R$ ` + productPrice} 
                 onChangeText={handlePriceChange} 
             />
 
