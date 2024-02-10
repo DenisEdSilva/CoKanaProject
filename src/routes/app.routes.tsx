@@ -8,6 +8,7 @@ import Profile from "../pages/Seller/Profile";
 import AdminHome from "../pages/Admin/AdminHome";
 import AdminProducts from "../pages/Admin/AdminProducts";
 import AdminPerfil from "../pages/Admin/AdminPerfil";
+import AdminStock from "../pages/Admin/AdminStock";
 
 const Tab = createBottomTabNavigator();
 
@@ -82,6 +83,10 @@ export function AdminRoute() {
             <Tab.Screen
                 name="Inicio"
                 component={AdminHome}
+            />
+            <Tab.Screen
+                name="Estoque"
+                component={AdminStock}
             />
             <Tab.Screen
                 name="Produtos"

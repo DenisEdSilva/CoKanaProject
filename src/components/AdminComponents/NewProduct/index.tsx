@@ -6,46 +6,59 @@ import firestore from '@react-native-firebase/firestore';
 
 interface Category {
     id: string;
-    category: string;
+    name: string;
+}
+
+interface Localization {
+    id: string;
+    name: string;
 }
 
 export function NewProduct() {
     const [category, setCategory] = useState<Category[]>([]);
-    console.log(category)
     const [productCategory, setProductCategory] = useState("");
-    console.log(productCategory)
     const [productName, setProductName] = useState("");
     const [productQuantity, setQuantity] = useState("");
     const [productPrice, setPrice] = useState("");
     const { registerProduct } = useAuth();
 
     useEffect(() => {
+
         const unsubscribe = firestore()
-        .collection('categories')
-        .onSnapshot((snapshot) => {
-            const newCategories = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as Category[];
-          setCategory(newCategories);
+            .collection('categories')
+            .orderBy('index')
+            .onSnapshot((snapshot) => {
+                const newCategories = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })) as Category[];
+              setCategory(newCategories);
+      
+              if (newCategories.length > 0) {
+                setProductCategory(newCategories[0].name);
+              }
+      
+            }, (error) => {
+              console.error(error);
+            });
+          
 
-          if (newCategories.length > 0) {
-            setProductCategory(newCategories[0].category);
-          }
+        return () => {
+          unsubscribe();
 
-        }, (error) => {
-          console.error(error);
-        });
-      return () => unsubscribe();
-    }, []);
+        }
+      }, []);
 
     function handleRegisterProduct() {
         if (!productName || !productQuantity || !productPrice) {
             console.log("Preencha todos os campos");
             return;
         }
-        const product = {productCategory, productName, productQuantity, productPrice};
+        const product = {productCategory, productName, productQuantity: Number(productQuantity), productPrice};
         registerProduct(product)
+        setProductName("");
+        setQuantity("");
+        setPrice("");
     }
 
     const handlePriceChange = (text: string) => {
@@ -81,8 +94,8 @@ export function NewProduct() {
                     selectedValue={productCategory}
                     onValueChange={(itemValue, itemIndex) => setProductCategory(itemValue)}
                 >
-                    {category.map((category) => (
-                        <Picker.Item key={category.id} label={category.category} value={category.category} />    
+                    {category.filter((category) => category.name).map((category) => (
+                        <Picker.Item key={category.id} label={category.name} value={category.id} />
                     ))}
                 </Picker>
             </View>
@@ -133,6 +146,8 @@ export function NewProduct() {
                 value={`R$ ` + productPrice} 
                 onChangeText={handlePriceChange} 
             />
+
+            
 
             <TouchableOpacity   
                 style={{

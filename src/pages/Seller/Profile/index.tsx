@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useAuth } from "../../../contexts/auth";
 
 function Profile() {
-    const { signOut } = useAuth();
+    const { signOut, user } = useAuth();
     async function toggleLogOut() {
         await signOut();
     }
@@ -12,6 +12,7 @@ function Profile() {
     return (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
             
+            <Text style={{ fontSize: 20 , fontWeight: "bold"}} >{user?.name}</Text>
             
             <TouchableOpacity 
                 onPress={toggleLogOut}

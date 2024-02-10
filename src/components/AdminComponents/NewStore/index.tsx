@@ -2,23 +2,23 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { useAuth } from "../../../contexts/auth";
 
-export function NewCategory() {
-    const [newCategory, setNewCategory] = useState("");
-    const { registerCategory } = useAuth()
+export function NewStore() {
+    const [newStore, setNewStore] = useState("");
+    const { registerStore } = useAuth()
 
-    function handleRegisterCategory() {
-        if (!newCategory) {
+    function handleRegisterStore() {
+        if (!newStore) {
             console.log("Preencha todos os campos");
             return;
         }
-        const category = {category: newCategory};      
-        registerCategory(category);  
-        setNewCategory("");
+        const store = {newStore};      
+        registerStore(store);  
+        setNewStore("")
     }
     
     return (
         <View style={{padding: 20, alignItems: "center", }}  >
-            <Text style={{fontSize: 20, fontWeight: "bold", marginBottom: 10, textAlign: "center"}}>Cadastro de Nova Categoria</Text>
+            <Text style={{fontSize: 20, fontWeight: "bold", marginBottom: 10, textAlign: "center"}}>Cadastro de Nova Loja</Text>
             <TextInput 
                 style={{ 
                     padding: 10,
@@ -30,25 +30,26 @@ export function NewCategory() {
                     borderTopLeftRadius: 10,
                     borderTopRightRadius: 10,
                 }}  
-                placeholder="Nome da categoria" 
-                value={newCategory}
-                onChangeText={(text) => setNewCategory(text)}
+                placeholder="Nome da Loja" 
+                value={newStore}
+                onChangeText={(text) => setNewStore(text)}
             />
             <TouchableOpacity
                 style={{
                     width: 350,
                     alignItems: "center",
                     padding: 6,
-                    borderWidth: 1,backgroundColor: "#52a3f3",
+                    borderWidth: 1,
+                    backgroundColor: "#52a3f3",
                     borderBottomLeftRadius: 10,
                     borderBottomRightRadius: 10,
                     borderTopLeftRadius: 10,
                     borderTopRightRadius: 10,
                     marginTop: 10
                 }}
-                onPress={handleRegisterCategory}
+                onPress={handleRegisterStore}
             >
-                <Text style={{fontSize: 16, fontWeight: "bold", color: "white"}} onPress={handleRegisterCategory} >Criar categoria</Text>
+                <Text style={{fontSize: 16, fontWeight: "bold", color: "white"}} onPress={handleRegisterStore} >Criar Loja</Text>
             </TouchableOpacity>
         </View>
     );

@@ -8,7 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 interface User {
     uid: string;
     role: string | null;
-    nome: string | null;
+    name: string | null;
     email: string | null;
 }
 
@@ -36,8 +36,13 @@ interface UserProfile {
 interface ProductsProps {
     productCategory: string;
     productName: string;
-    productQuantity: string;
+    productQuantity: number;
     productPrice: string;
+}
+
+interface StockProps {
+    stockId: string;
+    quantity: number;
 }
 
 interface AuthContextType {
@@ -50,8 +55,10 @@ interface AuthContextType {
     signUp: ({ role, name, email, password }: UserSignUp) => Promise<void>;
     storageUser: (data: User) => Promise<void>;
     registerProduct: ({ productCategory, productName, productQuantity, productPrice }: ProductsProps) => Promise<void>;
-    registerCategory: ({ newCategory }: { newCategory: string }) => Promise<void>;
-  }
+    registerCategory: ({ category }: { category: string }) => Promise<void>;
+    registerStore: ({ newStore }: { newStore: string }) => Promise<void>;
+    updateStockQuantity: ({ quantity, stockId }: StockProps) => Promise<void>;
+}
 
   export const AuthContext = createContext<AuthContextType>({
     signed: false,
@@ -64,6 +71,8 @@ interface AuthContextType {
     storageUser: async () => {},
     registerProduct: async () => {},
     registerCategory: async () => {},
+    registerStore: async () => {},
+    updateStockQuantity: async () => {},
   });
 
 export default function AuthProvider({ children }:childrenProps) {
@@ -97,23 +106,11 @@ export default function AuthProvider({ children }:childrenProps) {
 				await firestore().collection('users')
 					.doc(uid).set({
                         role: role,
-						nome: name,
+						name: name,
                         email: email,
 						createdAt: new Date(),
 					})
-					.then(() => {
-						let data = {
-							uid: uid,
-                            role: role,
-							nome: name,
-							email: value.user.email,
-						}
-						setUser(data);
-						storageUser(data)
-						setLoadingAuth(false);
-                                                
-					})
-
+                    setLoadingAuth(false);
 			})
 			.catch((error) => {
 				console.log(error);
@@ -135,7 +132,7 @@ export default function AuthProvider({ children }:childrenProps) {
                 let data = {
                     uid: uid,
                     role: userProfileData.role,
-                    nome: userProfileData.name,
+                    name: userProfileData.name,
                     email: value.user.email ? value.user.email : null
                 };  
                 setUser(data);
@@ -158,20 +155,84 @@ export default function AuthProvider({ children }:childrenProps) {
             })
     }
 
-    async function registerCategory({newCategory}: {newCategory: string}) {
-        await firestore().collection('categories').add({
-            category: newCategory
+    async function registerStore({newStore}: {newStore: string}) {
+        const storesRef = firestore().collection('stores');
+
+        const newIndex = await firestore().runTransaction(async (transaction) => {
+            const indexRef = storesRef.doc('storeIndex');
+            const indexDoc = await transaction.get(indexRef);
+        
+            if (!indexDoc.exists) {
+                transaction.set(indexRef, { index: 0 });
+                return 0;
+            } else {
+                const currentIndex = indexDoc.data()?.index;
+                const newIndex = currentIndex + 1;
+                transaction.update(indexRef, { index: newIndex });
+                return newIndex;
+            }
+        });
+        await storesRef.add({
+            index: newIndex,
+            name: newStore
+        });
+    }
+
+    async function registerCategory({ category }: { category: string }) {
+        const categoriesRef = firestore().collection('categories');
+      
+        const newIndex = await firestore().runTransaction(async (transaction) => {
+            const indexRef = categoriesRef.doc('categoryIndex');
+            const indexDoc = await transaction.get(indexRef);
+        
+            if (!indexDoc.exists) {
+                transaction.set(indexRef, { index: 0 });
+                return 0;
+            } else {
+                const currentIndex = indexDoc.data()?.index;
+                const newIndex = currentIndex + 1;
+                transaction.update(indexRef, { index: newIndex });
+                return newIndex;
+            }
+        });
+      
+        await categoriesRef.add({
+            index: newIndex,
+            name: category 
+        });
+        
+      }
+      
+    async function registerProduct( { productCategory, productName, productQuantity, productPrice}: ProductsProps) {{
+        const storesSnapshot = await firestore().collection('stores').where('index', '==', 0).get();
+        if (storesSnapshot.empty) {
+            throw new Error('No stores found');
+        }
+
+        const store = storesSnapshot.docs[0];
+
+        const productRef = await firestore().collection('products').add({
+            storeId: store.id,
+            category: productCategory,
+            name: productName,
+            price: productPrice
+        });
+
+        await firestore().collection('stock').add({
+            storeId: store.id,
+            productId: productRef.id,
+            quantity: productQuantity
+        });
+    }}
+
+    async function updateStockQuantity({quantity, stockId} : StockProps) {
+        await firestore().collection('stock').doc(stockId).update({
+            quantity: quantity
+        }).catch(error => {
+            console.log(error); 
         })
     }
 
-    async function registerProduct( { productCategory, productName, productQuantity, productPrice}: ProductsProps) {{
-        await firestore().collection('products').add({
-            category: productCategory,
-            name: productName,
-            quantity: productQuantity,
-            price: productPrice
-        })
-    }}
 
     async function storageUser(data: User) {
         await AsyncStorage.setItem("@cokana", JSON.stringify(data))
@@ -187,7 +248,9 @@ export default function AuthProvider({ children }:childrenProps) {
         signUp,
         storageUser,
         registerProduct,
-        registerCategory
+        registerCategory,
+        registerStore,
+        updateStockQuantity
       };
 
     return (
