@@ -111,9 +111,9 @@ export default function AdminPerfil() {
                 style={{
                     width: "90%",
                     alignItems: "center",
-                    justifyContent: "center",
                     padding: 6,
-                    borderWidth: 2,
+                    borderWidth: 1,
+                    backgroundColor: "#a92323",
                     borderBottomLeftRadius: 10,
                     borderBottomRightRadius: 10,
                     borderTopLeftRadius: 10,
@@ -121,7 +121,7 @@ export default function AdminPerfil() {
                     marginTop: 10
                 }}
             >
-                <Text style={{fontSize: 16, fontWeight: "bold"}}>Sair</Text>
+                <Text style={{fontSize: 16, fontWeight: "bold", color: "white"}} >Sair</Text>
             </TouchableOpacity>
             
         </View>
