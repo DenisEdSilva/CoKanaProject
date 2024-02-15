@@ -1,13 +1,11 @@
-import React, { useContext, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 
-import { AuthContext, useAuth } from "../../contexts/auth";
+import {  useAuth } from "../../contexts/auth";
 
 
 function Login() {
-    const [selectedRole, setSelectedRole] = React.useState("seller");
-    const [userName, setUserName] = React.useState("");
     const [userEmail, setUserEmail] = React.useState("");
     const [userPass, setUserPass] = React.useState("");
     const { signIn, signUp, loadingAuth } = useAuth();
@@ -105,7 +103,7 @@ function Login() {
                 }}
             >
                 { loadingAuth ? (
-                    <ActivityIndicator size={16} color="#00ff00" />
+                    <ActivityIndicator size={16} color="#14c06c" />
                 ) : (
                     <Text 
                         style={{

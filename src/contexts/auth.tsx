@@ -43,6 +43,7 @@ interface ProductsProps {
 interface StockProps {
     stockId: string;
     quantity: number;
+    productId: string;
 }
 
 interface AuthContextType {
@@ -57,7 +58,7 @@ interface AuthContextType {
     registerProduct: ({ productCategory, productName, productQuantity, productPrice }: ProductsProps) => Promise<void>;
     registerCategory: ({ category }: { category: string }) => Promise<void>;
     registerStore: ({ newStore }: { newStore: string }) => Promise<void>;
-    updateStockQuantity: ({ quantity, stockId }: StockProps) => Promise<void>;
+    updateStockQuantity: ({ quantity, stockId, productId }: StockProps) => Promise<void>;
 }
 
   export const AuthContext = createContext<AuthContextType>({
@@ -225,12 +226,30 @@ export default function AuthProvider({ children }:childrenProps) {
         });
     }}
 
-    async function updateStockQuantity({quantity, stockId} : StockProps) {
-        await firestore().collection('stock').doc(stockId).update({
-            quantity: quantity
-        }).catch(error => {
-            console.log(error); 
-        })
+    async function updateStockQuantity({ quantity, stockId, productId }: StockProps) {
+        try {
+            const stockDoc = await firestore().collection('stock').doc(stockId).get();
+    
+            if (!stockDoc.exists) {
+                console.log("Documento de estoque não encontrado.");
+                return;
+            }
+    
+            const stockData = stockDoc.data();
+            
+            if (stockData && stockData?.productId) {
+                const currentQuantity = stockData.quantity || 0;
+                const newQuantity = currentQuantity + quantity;
+    
+                await firestore().collection('stock').doc(stockId).update({
+                    quantity: newQuantity
+                })
+            } else {
+                console.log("ProductId não encontrado no documento de estoque.");
+            }
+        } catch (error) {
+            console.log("Erro ao atualizar a quantidade de estoque:", error);
+        }
     }
 
 

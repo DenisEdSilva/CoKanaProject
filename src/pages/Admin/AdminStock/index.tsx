@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, ActivityIndicator, Modal, Button, TouchableOpacity } from 'react-native';
 import { firebase } from '@react-native-firebase/auth';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
-import ProductList from '../../../components/AdminComponents/ProductList';
+import StoreList from '../../../components/AdminComponents/StoreList';
 import Feather from 'react-native-vector-icons/Feather';
 import { StockTransfer } from '../../../components/AdminComponents/StockTransfer';
 import { ReplenishProduct } from '../../../components/AdminComponents/ReplenishProduct';
@@ -31,11 +31,12 @@ export default function AdminStock() {
     const [productsByStore, setProductsByStore] = useState<{ [key: string]: Product[] }>({});
     const [productList, setProductList] = useState<Product[]>([]);
     const [categoryList, setCategoryList] = useState<Category[]>([]);
-    const [openedStoreId, setOpenedStoreId] = useState<string | null>(null);
+    const [openedProductId, setOpenedProdutId] = useState<string | null>(null);
     const [openedCategoryId, setOpenedCategoryId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [typeModal, setTypeModal] = useState("");
+    const [productOpened, setProductOpened] = useState(false);
 
     const productsUnsubsRef = useRef<Record<string, () => void>>({});
 
@@ -45,6 +46,23 @@ export default function AdminStock() {
 
     useEffect(() => {
         if (isFocused) {
+
+            const unloadProducts = firebase.firestore().collection('products')
+                .onSnapshot(querySnapshot => {
+                    const newProducts: Product[] = [];
+                    querySnapshot.forEach(doc => {
+                        newProducts.push({
+                            id: doc.id,
+                            category: doc.data().category,
+                            storeId: doc.data().storeId,
+                            name: doc.data().name,
+                            price: doc.data().price
+                        });
+                    });
+                    setProductList(newProducts);
+                })
+
+
             const storesUnsub = firebase.firestore().collection('stores')
                 .orderBy('index', 'asc')
                 .onSnapshot(querySnapshot => {
@@ -99,6 +117,7 @@ export default function AdminStock() {
             return () => {
                 storesUnsub();
                 unsubscribe();
+                unloadProducts();
 
                 Object.values(productsUnsubsRef.current).forEach(unsub => unsub());
             };
@@ -136,21 +155,14 @@ export default function AdminStock() {
         }
     };
       
-    const toggleStoreOpen = (storeId: string) => {
-        if (openedStoreId !== storeId) {
-            setOpenedStoreId(storeId);
-            if (!productsByStore[storeId]) {
-                getProductsByStore(storeId).then(products => {
-                    setProductsByStore(prevProducts => ({
-                        ...prevProducts,
-                        [storeId]: products
-                    }));
-                });
-            }
+    const toggleProductOpen = ( productId: string ) => {
+        if (openedProductId !== productId) {
+            setOpenedProdutId(productId);
+            setProductOpened(true);
         } else {
-            setOpenedStoreId(null);
+            setOpenedProdutId(null);
         }
-    };
+    }
 
     const toggleCategoryOpen = (categoryId: string) => {
         if (openedCategoryId !== categoryId) {
@@ -187,7 +199,7 @@ export default function AdminStock() {
             {
                 loading ? (
                     <View style={{ alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                        <ActivityIndicator size={80} color="#68e222" />
+                        <ActivityIndicator size={80} color="#14c06c" />
                     </View>
                 ) : (
                     <View style={{ 
@@ -281,64 +293,70 @@ export default function AdminStock() {
                         <View 
                             style={{
                                 width: '100%',
-                            backgroundColor: '#ffffff',
+                                backgroundColor: '#ffffff',
                             }}
                         >
-                            {storesList.filter((store) => store.name).map((store) => (
-                                <View key={store.id} style={{
+                            {categoryList.filter(category => category.name).map((category) => (
+                                <View key={category.id} style={{
                                     flexDirection: 'column',
-                                    alignItems: 'stretch', 
-                                    marginBottom: 10,
+                                    alignItems: 'stretch',
                                     backgroundColor: '#ffffff', 
                                     shadowColor: "#000",
                                     shadowOffset: { width: 0, height: 2 },
                                     shadowOpacity: 0.25,
                                     shadowRadius: 3.84,
-                                    elevation: 5,
+                                    elevation: 6,
                                 }}>
                                     <View 
                                         style={{
-                                        flexDirection: 'row',
-                                        justifyContent: 'space-between',
-                                        padding: 10,
-                                        backgroundColor: '#f8f8f8',
-                                        borderTopWidth: 3,
-                                        borderColor: '#2f5d50',
+                                            flexDirection: 'row',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            padding: 10,
+                                            backgroundColor: '#f8f8f8',
+                                            borderTopWidth: 4,
+                                            borderColor: openedCategoryId === category.id ? '#4bb30f' : '#3c7a5e',
                                         }}
                                     >
                                         <Text style={{ 
                                             fontSize: 16,
                                             fontWeight: "bold",
                                             marginLeft: "2.5%", 
-                                        }}>{store.name}</Text>
+                                        }}>{category.name}</Text>
                                         <TouchableOpacity style={{
                                             padding: 8,
                                             borderWidth: 1,
                                             width: "15%",
                                             borderColor: '#2f5d50', 
                                             borderRadius: 6,
-                                            backgroundColor: openedStoreId === store.id ? '#4bb30f' : '#3c7a5e',
+                                            backgroundColor: openedCategoryId === category.id ? '#4bb30f' : '#3c7a5e',
                                             alignItems: "center",
                                             marginRight: "2.5%"
                                             }}
-                                            onPress={() => toggleStoreOpen(store.id)}
+                                            onPress={() => toggleCategoryOpen(category.id)}
                                         >
-                                        <Feather name={openedStoreId === store.id ? "chevron-up" : "chevron-down"} size={24} color="white" />
+                                        <Feather name={openedCategoryId === category.id ? "chevron-up" : "chevron-down"} size={24} color="white" />
                                         </TouchableOpacity>
                                     </View>
-                                    {openedStoreId === store.id && (
-                                        <View style={{ backgroundColor: '#f0f0f0' }}>
-                                            {categoryList.filter((category) => category.name).map((category) => (   
-                                                <React.Fragment key={category.id}>
-                                                    <View style={{ 
-                                                        flexDirection: 'row', 
-                                                        justifyContent: 'space-between', 
-                                                        padding: 10,
-                                                        borderBottomWidth: 1,
-                                                        borderColor: '#c8c8c8',
-                                                        alignItems: "center",
-                                                    }}>
-                                                        <Text style={{ fontSize: 16 }}>{category.name}</Text>
+                                    
+                                    { openedCategoryId === category.id && (
+                                        <View>
+                                            {productList.filter(product => product.category === category.id).map((product, index, filteredList) => (
+                                                <React.Fragment key={product.id}>
+                                                    <View 
+                                                        style={{
+                                                            width: '100%',
+                                                            flexDirection: 'row',
+                                                            justifyContent: 'space-between',
+                                                            padding: 14,
+                                                            borderBottomColor: '#c8c8c8',
+                                                            borderTopWidth: 3,
+                                                            borderColor: openedProductId === product.id ? '#4bb30f' : '#3c7a5e',
+                                                        }}    
+                                                    >
+                                                        <Text
+                                                            style={{ fontSize: 16, alignSelf: 'center' }}
+                                                        >{product.name}</Text>
                                                         <TouchableOpacity 
                                                             style={{
                                                                 padding: 5,
@@ -346,22 +364,28 @@ export default function AdminStock() {
                                                                 width: "12%",
                                                                 borderColor: '#2f5d50', 
                                                                 borderRadius: 6,
-                                                                backgroundColor: openedCategoryId === category.id ? '#4bb30f' : '#3c7a5e',
+                                                                backgroundColor: openedProductId === product.id ? '#4bb30f' : '#3c7a5e',
                                                                 alignItems: "center",
-                                                                marginRight: "3.75%"
+                                                                marginRight: "3.50%"
                                                             }}
-                                                            onPress={() => toggleCategoryOpen(category.id)}
+                                                            onPress={() => toggleProductOpen(product.id)}
                                                         >
-                                                        <Feather name={openedCategoryId === category.id ? "chevron-up" : "chevron-down"} size={24} color="#ffffff" />
+                                                            <Feather name={openedProductId === product.id ? "chevron-up" : "chevron-down"} size={24} color="#fff" />
                                                         </TouchableOpacity>
                                                     </View>
-                                                    {openedCategoryId === category.id && store && store.id && (
-                                                        <ProductList categoryId={category.id} storeId={store.id} />
-                                                    )}
+                                                        { openedProductId === product.id && product && category.id && (
+                                                            <View key={product.id} style={{
+                                                                borderTopWidth: 3,
+                                                                borderColor: openedProductId === product.id ? '#4bb30f' : '#3c7a5e',
+                                                            }}>
+                                                                <StoreList productId={product.id} categoryId={category.id} opened={productOpened} />
+                                                            </View>
+                                                        )}
                                                 </React.Fragment>
                                             ))}
                                         </View>
                                     )}
+
                                 </View>
                                 ))
                             }
@@ -372,5 +396,3 @@ export default function AdminStock() {
         </View>
     );
 }
-
-
