@@ -204,27 +204,36 @@ export default function AuthProvider({ children }:childrenProps) {
         
       }
       
-    async function registerProduct( { productCategory, productName, productQuantity, productPrice}: ProductsProps) {{
-        const storesSnapshot = await firestore().collection('stores').where('index', '==', 0).get();
-        if (storesSnapshot.empty) {
-            throw new Error('No stores found');
+      async function registerProduct({ productCategory, productName, productQuantity, productPrice }: ProductsProps) {
+        try {
+            const storesSnapshot = await firestore().collection('stores').where('index', '==', 0).get();
+            if (storesSnapshot.empty) {
+                throw new Error('Nenhuma loja encontrada');
+            }
+            const store = storesSnapshot.docs[0];
+    
+            const productRef = await firestore().collection('stores').doc(store.id).collection('products').add({
+                category: productCategory,
+                name: productName,
+                price: productPrice
+            });
+    
+            await productRef.update({
+                quantity: productQuantity
+            });
+
+            await firestore().collection('stores').doc(store.id).collection('stock').doc(productRef.id).set({
+                productId: productRef.id,
+                quantity: productQuantity
+            });
+    
+            console.log('Produto registrado com sucesso.');
+        } catch (error) {
+            console.error('Erro ao registrar produto:', error);
+            throw error;
         }
-
-        const store = storesSnapshot.docs[0];
-
-        const productRef = await firestore().collection('products').add({
-            storeId: store.id,
-            category: productCategory,
-            name: productName,
-            price: productPrice
-        });
-
-        await firestore().collection('stock').add({
-            storeId: store.id,
-            productId: productRef.id,
-            quantity: productQuantity
-        });
-    }}
+    }
+    
 
     async function updateStockQuantity({ quantity, stockId, productId }: StockProps) {
         try {

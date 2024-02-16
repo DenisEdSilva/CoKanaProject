@@ -14,7 +14,7 @@ interface Localization {
     name: string;
 }
 
-export function NewProduct() {
+export function NewProduct({ fetchProducts }: { fetchProducts: () => void }) {
     const [category, setCategory] = useState<Category[]>([]);
     const [productCategory, setProductCategory] = useState("");
     const [productName, setProductName] = useState("");
@@ -56,9 +56,15 @@ export function NewProduct() {
         }
         const product = {productCategory, productName, productQuantity: Number(productQuantity), productPrice};
         registerProduct(product)
-        setProductName("");
-        setQuantity("");
-        setPrice("");
+        .then(() => {
+            setProductName("");
+            setQuantity("");
+            setPrice("");
+            fetchProducts();
+        })
+        .catch(error => {
+            console.error("Erro ao registrar o produto:", error);
+        });
     }
 
     const handlePriceChange = (text: string) => {

@@ -396,3 +396,32 @@ export default function AdminStock() {
         </View>
     );
 }
+
+
+
+
+
+// Stock: {
+//     storeId:
+//     productId: 
+//     quantity:
+// }
+
+
+
+// Coleção "Stock":
+//   - Documento "storeId1":
+//     - Subcoleção "products":
+//       - Documento "productId1":
+//         - quantidade: ...
+//       - Documento "productId2":
+//         - quantidade: ...
+//       - ...
+//   - Documento "storeId2":
+//     - Subcoleção "products":
+//       - Documento "productId1":
+//         - quantidade: ...
+//       - Documento "productId2":
+//         - quantidade: ...
+//       - ...
+//   - ...

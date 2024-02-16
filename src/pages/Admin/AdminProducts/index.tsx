@@ -15,6 +15,15 @@ interface ProductList {
     storeId: string;
 }
 
+interface ProductProps {
+    id: string;
+    category: string;
+    name: string;
+    quantity: string;
+    price: string;
+    storeId: string;
+}
+
 export default function AdminProducts() {
     const [isLoading, setIsLoading] = useState(false);
     const [currentProductId, setCurrentProductId] = useState("");
@@ -28,23 +37,63 @@ export default function AdminProducts() {
     const [productsList, setProductsList] = useState<ProductList[]>([]);
 
 
-    useEffect(() => {
+    function fetchProducts() {
         setIsLoading(true);
-        const listProducts = firestore().collection('products')
-        .onSnapshot((snapshot) => {
-            const newProducts = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            })) as ProductList[];
-            setProductsList(newProducts);
-            setIsLoading(false);
+      
+        const unsubscribeStores = firestore()
+            .collection('stores')
+            .onSnapshot(snapshot => {
+                const allProducts: ProductProps[] = [];
+                const promises: Promise<void>[] = [];
+      
+                snapshot.forEach(storeDoc => {
+                    const productsPromise = storeDoc.ref
+                    .collection('products')
+                    .orderBy('name')
+                    .get()
+                    .then(productsSnapshot => {
+                        productsSnapshot.forEach(productDoc => {
+                            const productData = productDoc.data();
+                            allProducts.push({
+                                id: productDoc.id,
+                                storeId: storeDoc.id,
+                                name: productData.name,
+                                category: productData.category,
+                                quantity: productData.quantity,
+                                price: productData.price,
+                            });
+                        });
+                    })
+                .catch(error => {
+                    console.error('Erro ao recuperar os produtos da loja', error);
+                });
+      
+                promises.push(productsPromise);
+            });
+      
+            Promise.all(promises)
+                .then(() => {
+                    setProductsList(allProducts);
+                    console.log("Lista de produtos: ", allProducts)
+                    console.log("Conjunto de Produtos: ", productsList)
+                    setIsLoading(false);
+                })
+                .catch(error => {
+                    console.error('Erro ao processar os produtos', error);
+                });
+            });
+        return unsubscribeStores;
+    }
 
-        }, (error) => {
-            console.error(error);
-            setIsLoading(false);
-        })
-        return () => listProducts();
-    }, []);
+
+    useEffect(() => {
+        fetchProducts();
+      
+        return () => {
+          fetchProducts();
+        };
+      }, []);
+
 
     function openModalNewProduct() {
         setTypeModal("NewProduct");
@@ -139,7 +188,7 @@ export default function AdminProducts() {
                 }}
             >
                 <View>
-                    { typeModal === "NewProduct" && <NewProduct />}
+                    { typeModal === "NewProduct" && <NewProduct fetchProducts={fetchProducts} />}
                     { typeModal === "NewCategory" && <NewCategory />}
                     { typeModal === "EditProduct" && <EditProduct productId={currentProductId} category={currentProductCategory} name={currentProductName} quantity={currentProductQuantity} price={currentProductPrice} storeId={currentProductLocalization} />}
                     <Button title="Fechar" onPress={() => {
@@ -176,7 +225,7 @@ export default function AdminProducts() {
                     }}
             >
                         {isLoading ? (
-                            <ActivityIndicator size="large" color="#00dd00" />
+                            <ActivityIndicator size="large" color="#2f5d50" />
 
                         ) : (
                             productsList.map((product) => (
@@ -264,3 +313,18 @@ export default function AdminProducts() {
         </View>
     )
 }
+
+
+        // const listProducts = firestore().collection('products')
+        // .onSnapshot((snapshot) => {
+        //     const newProducts = snapshot.docs.map((doc) => ({
+        //         id: doc.id,
+        //         ...doc.data(),
+        //     })) as ProductList[];
+        //     // setProductsList(newProducts);
+        //     // setIsLoading(false);
+
+        // }, (error) => {
+        //     console.error(error);
+        //     // setIsLoading(false);
+        // })
