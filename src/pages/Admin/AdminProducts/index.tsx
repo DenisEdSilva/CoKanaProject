@@ -201,8 +201,8 @@ export default function AdminProducts() {
             <Text style={{fontSize: 20, fontWeight: "bold", marginTop: 20, color: "#2f5d50"}}>Produtos</Text>
             <ScrollView 
                 style={{
+                    flex: 1,
                     width: '100%',
-                    height: '100%',
                     marginTop: 20,
                     borderTopWidth: 3,
                     borderColor: '#2f5d50',
@@ -213,16 +213,11 @@ export default function AdminProducts() {
                     borderTopRightRadius: 12,
                     backgroundColor: '#ffffff',
                 }}
-                contentContainerStyle={ isLoading ? 
-                    {
-                        flex: 1,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                    } : {
-                        flex: 1,
-                        justifyContent: 'flex-start',
-                        alignItems: 'center',
-                    }}
+                contentContainerStyle={{
+                    flexGrow: 1,
+                    justifyContent: isLoading ? 'center' : 'flex-start',
+                    alignItems: 'center',
+                }}
             >
                         {isLoading ? (
                             <ActivityIndicator size="large" color="#2f5d50" />
@@ -313,18 +308,3 @@ export default function AdminProducts() {
         </View>
     )
 }
-
-
-        // const listProducts = firestore().collection('products')
-        // .onSnapshot((snapshot) => {
-        //     const newProducts = snapshot.docs.map((doc) => ({
-        //         id: doc.id,
-        //         ...doc.data(),
-        //     })) as ProductList[];
-        //     // setProductsList(newProducts);
-        //     // setIsLoading(false);
-
-        // }, (error) => {
-        //     console.error(error);
-        //     // setIsLoading(false);
-        // })
