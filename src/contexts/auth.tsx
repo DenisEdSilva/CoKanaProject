@@ -42,7 +42,8 @@ interface ProductsProps {
 
 interface StockProps {
     stockId: string;
-    quantity: number;
+    storeId: string
+    quantity: Number | null;
     productId: string;
 }
 
@@ -235,9 +236,12 @@ export default function AuthProvider({ children }:childrenProps) {
     }
     
 
-    async function updateStockQuantity({ quantity, stockId, productId }: StockProps) {
+    async function updateStockQuantity({ quantity, storeId, productId }: StockProps) {
         try {
-            const stockDoc = await firestore().collection('stock').doc(stockId).get();
+            const stockRef = firestore().collection('stores').doc(storeId)
+                              .collection('stock').doc(productId);
+    
+            const stockDoc = await stockRef.get();
     
             if (!stockDoc.exists) {
                 console.log("Documento de estoque não encontrado.");
@@ -245,14 +249,22 @@ export default function AuthProvider({ children }:childrenProps) {
             }
     
             const stockData = stockDoc.data();
-            
-            if (stockData && stockData?.productId) {
+    
+            if (stockData && stockData.productId) {
                 const currentQuantity = stockData.quantity || 0;
                 const newQuantity = currentQuantity + quantity;
-    
-                await firestore().collection('stock').doc(stockId).update({
+
+                await stockRef.update({
                     quantity: newQuantity
-                })
+                });
+    
+                const productRef = firestore().collection('stores').doc(storeId)
+                                   .collection('products').doc(productId);
+    
+                await productRef.set({
+                    ...stockData, 
+                    quantity: newQuantity 
+                }, { merge: true }); 
             } else {
                 console.log("ProductId não encontrado no documento de estoque.");
             }

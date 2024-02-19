@@ -64,8 +64,8 @@ export default function AdminProducts() {
                             });
                         });
                     })
-                .catch(error => {
-                    console.error('Erro ao recuperar os produtos da loja', error);
+                    .catch(error => {
+                        console.error('Erro ao recuperar os produtos da loja', error);
                 });
       
                 promises.push(productsPromise);
@@ -74,8 +74,6 @@ export default function AdminProducts() {
             Promise.all(promises)
                 .then(() => {
                     setProductsList(allProducts);
-                    console.log("Lista de produtos: ", allProducts)
-                    console.log("Conjunto de Produtos: ", productsList)
                     setIsLoading(false);
                 })
                 .catch(error => {

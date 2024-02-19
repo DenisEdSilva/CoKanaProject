@@ -18,7 +18,7 @@ export function SellerRoute() {
             screenOptions={{
                 headerShown: false,
                 tabBarInactiveTintColor: "#000",
-                tabBarActiveTintColor: "#0000ff",
+                tabBarActiveTintColor: "#3c7a5e",
                 tabBarItemStyle: {                
                     alignItems: "center",
                     justifyContent: "center",   
@@ -68,7 +68,7 @@ export function AdminRoute() {
             screenOptions={{
                 headerShown: false,
                 tabBarInactiveTintColor: "#000",
-                tabBarActiveTintColor: "#0000ff",
+                tabBarActiveTintColor: "#3c7a5e",
                 tabBarItemStyle: {                
                     alignItems: "center",
                     justifyContent: "center",   
