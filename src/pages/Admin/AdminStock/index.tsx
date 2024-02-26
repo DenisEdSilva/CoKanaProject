@@ -2,11 +2,11 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, ActivityIndicator, Modal, Button, TouchableOpacity, ScrollView } from 'react-native';
 import { firebase } from '@react-native-firebase/auth';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
-import StoreList from '../../../components/AdminComponents/StoreList';
 import Feather from 'react-native-vector-icons/Feather';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import { StockTransfer } from '../../../components/AdminComponents/StockTransfer';
 import { ReplenishProduct } from '../../../components/AdminComponents/ReplenishProduct';
+import { CategoryList } from '../../../components/AdminComponents/CategoryList';
 
 interface Product {
     id: string;
@@ -161,7 +161,10 @@ export default function AdminStock() {
         setModalVisible(true);
     };
 
-    function openModalStockTransfer () {
+    function openModalStockTransfer (category: string, product: string, storeId: string) {
+        setSelectedCategoryId(category);
+        setSelectedProductId(product);
+        setSelectedStoreId(storeId);
         setTypeModal("StockTransfer");
         setModalVisible(true);
     }
@@ -194,7 +197,7 @@ export default function AdminStock() {
                             }}
                         >
                             <View>
-                                { typeModal === "StockTransfer" && <StockTransfer />}
+                                { typeModal === "StockTransfer" && <StockTransfer categoryId={selectedCategoryId} productId={selectedProductId} storeId={selectedStoreId} />}
                                 { typeModal === "ReplenishProduct" && <ReplenishProduct categoryId={selectedCategoryId} productId={selectedProductId} storeId={selectedStoreId} />}
                                 <Button title="Fechar" onPress={() => {
                                     setModalVisible(!modalVisible);
@@ -210,7 +213,7 @@ export default function AdminStock() {
                                 marginBottom: 35, 
                             }}
                         >
-                            <Text style={{fontSize: 20, fontWeight: "bold", marginTop: 20, color: "#2f5d50"}}>Estoque</Text>
+                            <Text style={{fontSize: 24, fontWeight: "bold", marginTop: 20, color: "#2f5d50"}}>Estoque</Text>
                         </View>
                         <View 
                             style={{
@@ -218,145 +221,7 @@ export default function AdminStock() {
                                 backgroundColor: '#ffffff',
                             }}
                         >
-                            {categoryList.filter(category => category.name).map((category) => (
-                                <View key={category.id} style={{
-                                    flexDirection: 'column',
-                                    alignItems: 'stretch',
-                                    backgroundColor: '#ffffff', 
-                                    shadowColor: "#000",
-                                    shadowOffset: { width: 0, height: 2 },
-                                    shadowOpacity: 0.25,
-                                    shadowRadius: 3.84,
-                                    elevation: 6,
-                                }}>
-                                    <View 
-                                        style={{
-                                            flexDirection: 'row',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            padding: 10,
-                                            backgroundColor: '#f8f8f8',
-                                            borderTopWidth: 4,
-                                            borderColor: openedCategoryId === category.id ? '#4bb30f' : '#3c7a5e',
-                                        }}
-                                    >
-                                        <Text style={{ 
-                                            fontSize: 16,
-                                            fontWeight: "bold",
-                                            marginLeft: "2.5%", 
-                                        }}>{category.name}</Text>
-                                        <TouchableOpacity style={{
-                                            padding: 8,
-                                            elevation: 3, 
-                                            borderWidth: 1,
-                                            width: "15%",
-                                            borderColor: '#2f5d50', 
-                                            borderRadius: 6,
-                                            backgroundColor: openedCategoryId === category.id ? '#4bb30f' : '#3c7a5e',
-                                            alignItems: "center",
-                                            marginRight: "2.5%"
-                                            }}
-                                            onPress={() => toggleCategoryOpen(category.id)}
-                                        >
-                                        <Feather name={openedCategoryId === category.id ? "chevron-up" : "chevron-down"} size={24} color="white" />
-                                        </TouchableOpacity>
-                                    </View>
-                                    
-                                    { openedCategoryId === category.id && (
-                                        <View>
-                                            {productList.filter(product => product.category === category.id).map((product, index, filteredList) => (
-                                                <React.Fragment key={product.id}>
-                                                    <View 
-                                                        style={{
-                                                            width: '100%',
-                                                            flexDirection: 'row',
-                                                            justifyContent: 'space-between',
-                                                            padding: 14,
-                                                            borderBottomColor: '#c8c8c8',
-                                                            borderTopWidth: 3,
-                                                            borderColor: openedProductId === product.id ? '#4bb30f' : '#3c7a5e',
-                                                        }}    
-                                                    >
-                                                        <Text
-                                                            style={{ fontSize: 16, alignSelf: 'center' }}
-                                                        >{product.name}</Text>
-                                                        <TouchableOpacity 
-                                                            style={{
-                                                                padding: 5,
-                                                                elevation: 3, 
-                                                                borderWidth: 1,
-                                                                width: "12%",
-                                                                borderColor: '#2f5d50', 
-                                                                borderRadius: 6,
-                                                                backgroundColor: openedProductId === product.id ? '#4bb30f' : '#3c7a5e',
-                                                                alignItems: "center",
-                                                                marginRight: "3%"
-                                                            }}
-                                                            onPress={() => toggleProductOpen(product.id)}
-                                                        >
-                                                            <Feather name={openedProductId === product.id ? "chevron-up" : "chevron-down"} size={24} color="#fff" />
-                                                        </TouchableOpacity>
-                                                    </View>
-                                                    {openedProductId === product.id && product && category.id && (
-                                                        <View key={product.id} style={{
-                                                            borderTopWidth: 3,
-                                                            borderColor: openedProductId === product.id ? '#4bb30f' : '#3c7a5e',
-                                                        }}>
-                                                           {Object.keys(productsByStore).map(storeId => {                                                                
-                                                                const productInStore = productsByStore[storeId].find(storeProduct => storeProduct.id === product.id);
-                                                                if (productInStore) { 
-                                                                    return (
-                                                                        <View key={storeId}>
-                                                                            <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-                                                                                <View style={{padding: 10, borderBottomWidth: 1, borderColor: '#c8c8c8'}}>
-                                                                                    <Text><Text style={{fontWeight: "bold"}}>Loja: </Text>{productInStore.storeName}</Text>
-                                                                                    <Text style={{fontSize: 16}}><Text style={{fontWeight: "bold"}}>Quantidade: </Text> {productInStore.stockQuantity}</Text>
-                                                                                </View>
-                                                                                <View style={{padding: 10, alignSelf: 'center', flexDirection: 'row', justifyContent: 'space-between'}}>
-                                                                                    <TouchableOpacity  style={{
-                                                                                        backgroundColor: '#3c7a5e',
-                                                                                        elevation: 3, 
-                                                                                        borderRadius: 10,
-                                                                                        padding: 10,
-                                                                                        marginRight: "2.5%",
-                                                                                        alignItems: 'center',
-                                                                                        justifyContent: 'center',
-                                                                                    }}
-                                                                                    onPress={() => openModalReplenishProduct(category.id, product.id, storeId)}
-                                                                                    >
-                                                                                        <Feather name="plus-circle" size={24} color="white" onPress={() => openModalReplenishProduct(category.id, product.id, storeId)} />
-                                                                                    </TouchableOpacity>
-                                                                                    <TouchableOpacity style={{ 
-                                                                                        backgroundColor: '#3c7a5e',
-                                                                                        elevation: 3,
-                                                                                        borderRadius: 10,
-                                                                                        padding: 10,
-                                                                                        marginRight: "2.5%",
-                                                                                        alignItems: 'center',
-                                                                                        justifyContent: 'center',
-                                                                                    }}
-                                                                                    onPress={openModalStockTransfer}
-                                                                                    >
-                                                                                        <Icon name="swap-horiz" size={24} color="white" onPress={openModalStockTransfer} />
-                                                                                    </TouchableOpacity>
-                                                                                </View>
-                                                                            </View>
-                                                                        </View>
-                                                                    );
-                                                                } else {''
-                                                                    return null; 
-                                                            }
-                                                            })}
-                                                        </View>
-                                                    )}
-                                                </React.Fragment>
-                                            ))}
-                                        </View>
-                                    )}
-
-                                </View>
-                                ))
-                            }
+                            <CategoryList onSelectCategory={toggleCategoryOpen} />
                         </View>
                     </View>
                 )
@@ -364,3 +229,144 @@ export default function AdminStock() {
         </View>
     );
 }
+
+
+// {categoryList.filter(category => category.name).map((category) => (
+//     <View key={category.id} style={{
+//         flexDirection: 'column',
+//         alignItems: 'stretch',
+//         backgroundColor: '#ffffff', 
+//         shadowColor: "#000",
+//         shadowOffset: { width: 0, height: 2 },
+//         shadowOpacity: 0.25,
+//         shadowRadius: 3.84,
+//         elevation: 6,
+//     }}>
+//         <View 
+//             style={{
+//                 flexDirection: 'row',
+//                 justifyContent: 'space-between',
+//                 alignItems: 'center',
+//                 padding: 10,
+//                 backgroundColor: '#f8f8f8',
+//                 borderTopWidth: 4,
+//                 borderColor: openedCategoryId === category.id ? '#4bb30f' : '#3c7a5e',
+//             }}
+//         >
+//             <Text style={{ 
+//                 fontSize: 16,
+//                 fontWeight: "bold",
+//                 marginLeft: "2.5%", 
+//             }}>{category.name}</Text>
+//             <TouchableOpacity style={{
+//                 padding: 8,
+//                 elevation: 3, 
+//                 borderWidth: 1,
+//                 width: "15%",
+//                 borderColor: '#2f5d50', 
+//                 borderRadius: 6,
+//                 backgroundColor: openedCategoryId === category.id ? '#4bb30f' : '#3c7a5e',
+//                 alignItems: "center",
+//                 marginRight: "2.5%"
+//                 }}
+//                 onPress={() => toggleCategoryOpen(category.id)}
+//             >
+//             <Feather name={openedCategoryId === category.id ? "chevron-up" : "chevron-down"} size={24} color="white" />
+//             </TouchableOpacity>
+//         </View>
+        
+//         { openedCategoryId === category.id && (
+//             <View>
+//                 {productList.filter(product => product.category === category.id).map((product, index, filteredList) => (
+//                     <React.Fragment key={product.id}>
+//                         <View 
+//                             style={{
+//                                 width: '100%',
+//                                 flexDirection: 'row',
+//                                 justifyContent: 'space-between',
+//                                 padding: 14,
+//                                 borderBottomColor: '#c8c8c8',
+//                                 borderTopWidth: 3,
+//                                 borderColor: openedProductId === product.id ? '#4bb30f' : '#3c7a5e',
+//                             }}    
+//                         >
+//                             <Text
+//                                 style={{ fontSize: 16, alignSelf: 'center' }}
+//                             >{product.name}</Text>
+//                             <TouchableOpacity 
+//                                 style={{
+//                                     padding: 5,
+//                                     elevation: 3, 
+//                                     borderWidth: 1,
+//                                     width: "12%",
+//                                     borderColor: '#2f5d50', 
+//                                     borderRadius: 6,
+//                                     backgroundColor: openedProductId === product.id ? '#4bb30f' : '#3c7a5e',
+//                                     alignItems: "center",
+//                                     marginRight: "3%"
+//                                 }}
+//                                 onPress={() => toggleProductOpen(product.id)}
+//                             >
+//                                 <Feather name={openedProductId === product.id ? "chevron-up" : "chevron-down"} size={24} color="#fff" />
+//                             </TouchableOpacity>
+//                         </View>
+//                         {openedProductId === product.id && product && category.id && (
+//                             <View key={product.id} style={{
+//                                 borderTopWidth: 3,
+//                                 borderColor: openedProductId === product.id ? '#4bb30f' : '#3c7a5e',
+//                             }}>
+//                                {Object.keys(productsByStore).map(storeId => {                                                                
+//                                     const productInStore = productsByStore[storeId].find(storeProduct => storeProduct.id === product.id);
+//                                     if (productInStore) { 
+//                                         return (
+//                                             <View key={storeId}>
+//                                                 <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+//                                                     <View style={{padding: 10, borderBottomWidth: 1, borderColor: '#c8c8c8'}}>
+//                                                         <Text><Text style={{fontWeight: "bold"}}>Loja: </Text>{productInStore.storeName}</Text>
+//                                                         <Text style={{fontSize: 16}}><Text style={{fontWeight: "bold"}}>Quantidade: </Text> {productInStore.stockQuantity}</Text>
+//                                                     </View>
+//                                                     <View style={{padding: 10, alignSelf: 'center', flexDirection: 'row', justifyContent: 'space-between'}}>
+//                                                         <TouchableOpacity  style={{
+//                                                             backgroundColor: '#3c7a5e',
+//                                                             elevation: 3, 
+//                                                             borderRadius: 10,
+//                                                             padding: 10,
+//                                                             marginRight: "2.5%",
+//                                                             alignItems: 'center',
+//                                                             justifyContent: 'center',
+//                                                         }}
+//                                                         onPress={() => openModalReplenishProduct(category.id, product.id, storeId)}
+//                                                         >
+//                                                             <Feather name="plus-circle" size={24} color="white" onPress={() => openModalReplenishProduct(category.id, product.id, storeId)} />
+//                                                         </TouchableOpacity>
+//                                                         <TouchableOpacity style={{ 
+//                                                             backgroundColor: '#3c7a5e',
+//                                                             elevation: 3,
+//                                                             borderRadius: 10,
+//                                                             padding: 10,
+//                                                             marginRight: "2.5%",
+//                                                             alignItems: 'center',
+//                                                             justifyContent: 'center',
+//                                                         }}
+//                                                         onPress={() => openModalStockTransfer(category.id, product.id, storeId)}
+//                                                         >
+//                                                             <Icon name="swap-horiz" size={24} color="white" onPress={() => openModalStockTransfer(category.id, product.id, storeId)} />
+//                                                         </TouchableOpacity>
+//                                                     </View>
+//                                                 </View>
+//                                             </View>
+//                                         );
+//                                     } else {''
+//                                         return null; 
+//                                 }
+//                                 })}
+//                             </View>
+//                         )}
+//                     </React.Fragment>
+//                 ))}
+//             </View>
+//         )}
+
+//     </View>
+//     ))
+// }

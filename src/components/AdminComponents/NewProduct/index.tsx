@@ -9,9 +9,10 @@ interface Category {
     name: string;
 }
 
-interface Localization {
+interface StoreProps {
     id: string;
     name: string;
+    index: number;
 }
 
 export function NewProduct({ fetchProducts }: { fetchProducts: () => void }) {
@@ -20,6 +21,8 @@ export function NewProduct({ fetchProducts }: { fetchProducts: () => void }) {
     const [productName, setProductName] = useState("");
     const [productQuantity, setQuantity] = useState("");
     const [productPrice, setPrice] = useState("");
+    const [storeList, setStoreList] = useState<StoreProps[]>([]);
+    const [storeId, setStoreId] = useState("");
     const { registerProduct } = useAuth();
 
     useEffect(() => {
@@ -41,21 +44,53 @@ export function NewProduct({ fetchProducts }: { fetchProducts: () => void }) {
             }, (error) => {
               console.error(error);
             });
+
+        const unsubStores = firestore().collection('stores').orderBy('index')
+            .onSnapshot((snapshot) => {
+                const newStores = snapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    name: doc.data().name,
+                    index: doc.data().index
+                })) as StoreProps[];
+                setStoreList(newStores);
+
+                if (newStores.length > 0) {
+                    setStoreId(newStores[0].id);
+                }
+            } , (error) => {
+                console.error(error);
+            }
+            )
+
+            
           
 
         return () => {
-          unsubscribe();
-
+            unsubscribe();
+            unsubStores();
         }
       }, []);
 
-    function handleRegisterProduct() {
-        if (!productName || !productQuantity || !productPrice) {
+      function handleRegisterProduct() {
+        if (!productName || !productQuantity || !productPrice || !storeId) {
             console.log("Preencha todos os campos");
             return;
         }
-        const product = {productCategory, productName, productQuantity: Number(productQuantity), productPrice};
-        registerProduct(product)
+    
+        const productData = {
+            category: productCategory,
+            name: productName,
+            quantity: Number(productQuantity),
+            price: Number(productPrice)
+        };
+    
+        const stockData = {
+            storeId: storeId,
+            quantity: Number(productQuantity),
+            productId: ''
+        };
+    
+        registerProduct(productData, stockData)
         .then(() => {
             setProductName("");
             setQuantity("");
@@ -85,6 +120,26 @@ export function NewProduct({ fetchProducts }: { fetchProducts: () => void }) {
     return (
         <View style={{padding: 20, alignItems: "center", }}>
             <Text style={{fontSize: 20, fontWeight: "bold", marginBottom: 10, textAlign: "center"}}>Cadastro de Novo Produto</Text>
+            <View 
+                style={{ 
+                    width: 350,
+                    margin: 5,
+                    borderWidth: 2,
+                    borderBottomLeftRadius: 10,
+                    borderBottomRightRadius: 10,
+                    borderTopLeftRadius: 10,
+                    borderTopRightRadius: 10,
+                }} 
+            >
+                <Picker
+                    selectedValue={storeId}
+                    onValueChange={(itemValue, itemIndex) => setStoreId(itemValue)}
+                >
+                    {storeList.filter((store) => store.name).map((store) => (
+                        <Picker.Item key={store.id} label={store.name} value={store.id} />
+                    ))}
+                </Picker>
+            </View>
             <View 
                 style={{ 
                     width: 350,

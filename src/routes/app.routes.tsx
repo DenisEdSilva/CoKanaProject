@@ -1,5 +1,6 @@
 import React from "react";
 
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import Home from "../pages/Seller/Home";
@@ -8,6 +9,8 @@ import Profile from "../pages/Seller/Profile";
 import AdminHome from "../pages/Admin/AdminHome";
 import AdminProducts from "../pages/Admin/AdminProducts";
 import AdminPerfil from "../pages/Admin/AdminPerfil";
+import { ProductList } from "../components/AdminComponents/ProductList";
+import { ProductItem } from '../components/AdminComponents/ProductItem';
 import AdminStock from "../pages/Admin/AdminStock";
 
 const Tab = createBottomTabNavigator();
@@ -86,7 +89,7 @@ export function AdminRoute() {
             />
             <Tab.Screen
                 name="Estoque"
-                component={AdminStock}
+                component={AdminStockStack}
             />
             <Tab.Screen
                 name="Produtos"
@@ -99,3 +102,17 @@ export function AdminRoute() {
         </Tab.Navigator>
     )
 }
+
+const Stack = createNativeStackNavigator();
+
+const AdminStockStack = () => {
+  return (
+    <Stack.Navigator  
+        screenOptions={{ headerShown: false }}  
+    >
+        <Stack.Screen name="AdminStock" component={AdminStock} />
+        <Stack.Screen name="ProductList" component={ProductList} />
+        <Stack.Screen name="ProductItem" component={ProductItem} />
+    </Stack.Navigator>
+  );
+};

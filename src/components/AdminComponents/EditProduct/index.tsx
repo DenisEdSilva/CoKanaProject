@@ -19,7 +19,6 @@ export function EditProduct({ productId, category, name, quantity, price, storeI
     const [currentProductCategory, setCurrentProductCategory] = useState(category)
     const [currentProductStoreId, setCurrentProductStoreId] = useState(storeId)
     const [currentProductName, setCurrentProductName] = useState(name)
-    const [currentProductQuantity, setCurrentProductQuantity] = useState(quantity)
     const [currentProductPrice, setCurrentProductPrice] = useState(price)
     const [newProductCategory, setNewProductCategory] = useState(category)
     const [newProductStoreId, setNewProductStoreId] = useState(storeId)
@@ -62,16 +61,15 @@ export function EditProduct({ productId, category, name, quantity, price, storeI
 
     function editProduct(productId: string) {
         firestore().collection('products').doc(productId).update({
-            category: newProductCategory,
-            storeId: newProductStoreId,
+            category: newProductCategory, 
+            storeId: newProductStoreId, 
             name: newProductName,
-            quantity: newProductQuantity,
             price: newProductPrice,
-
         }).catch(error => {
             console.log(error);
         });
-      }
+    }
+    
       
     const handlePriceChange = (text: string) => {
 
@@ -118,12 +116,6 @@ export function EditProduct({ productId, category, name, quantity, price, storeI
                     placeholder="Nome do Produto" 
                     value={currentProductName} 
                     onChangeText={ (text) => { setCurrentProductName(text); setNewProductName(text) } }
-                />
-                <TextInput 
-                    placeholder="Quantidade" 
-                    keyboardType='numeric'
-                    value={currentProductQuantity} 
-                    onChangeText={ (text) => { setCurrentProductQuantity(text); setNewProductQuantity(text) } } 
                 />
                 <TextInput
                     placeholder="Preço"

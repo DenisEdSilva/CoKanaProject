@@ -33,18 +33,24 @@ interface UserProfile {
     name: string;
 }
 
-interface ProductsProps {
-    productCategory: string;
-    productName: string;
-    productQuantity: number;
-    productPrice: string;
+interface ProductData {
+    category: string;
+    name: string;
+    price: number;
+    quantity: number;
 }
 
-interface StockProps {
-    stockId: string;
-    storeId: string
-    quantity: Number | null;
+interface StockData {
+    quantity: number;
     productId: string;
+    storeId: string;
+}
+
+interface StockTransferProps {
+    quantity: number;
+    productId: string;
+    sourceStoreId: string;
+    destinationStoreId: string;
 }
 
 interface AuthContextType {
@@ -56,10 +62,11 @@ interface AuthContextType {
     signOut: () => Promise<void>;
     signUp: ({ role, name, email, password }: UserSignUp) => Promise<void>;
     storageUser: (data: User) => Promise<void>;
-    registerProduct: ({ productCategory, productName, productQuantity, productPrice }: ProductsProps) => Promise<void>;
+    registerProduct: (productData: ProductData, stockData: StockData) => Promise<void>;
     registerCategory: ({ category }: { category: string }) => Promise<void>;
     registerStore: ({ newStore }: { newStore: string }) => Promise<void>;
-    updateStockQuantity: ({ quantity, stockId, productId }: StockProps) => Promise<void>;
+    updateStockQuantity: ({ quantity, productId }: StockData) => Promise<void>;
+    stockTransfer: ({ quantity, productId, sourceStoreId, destinationStoreId }: StockTransferProps) => Promise<void>;
 }
 
   export const AuthContext = createContext<AuthContextType>({
@@ -75,6 +82,7 @@ interface AuthContextType {
     registerCategory: async () => {},
     registerStore: async () => {},
     updateStockQuantity: async () => {},
+    stockTransfer: async () => {}
   });
 
 export default function AuthProvider({ children }:childrenProps) {
@@ -205,27 +213,21 @@ export default function AuthProvider({ children }:childrenProps) {
         
       }
       
-      async function registerProduct({ productCategory, productName, productQuantity, productPrice }: ProductsProps) {
+      async function registerProduct(productData: ProductData, stockData: StockData) {
+        console.log(productData.name)
+        console.log(stockData.productId)
+    
         try {
-            const storesSnapshot = await firestore().collection('stores').where('index', '==', 0).get();
-            if (storesSnapshot.empty) {
-                throw new Error('Nenhuma loja encontrada');
-            }
-            const store = storesSnapshot.docs[0];
-    
-            const productRef = await firestore().collection('stores').doc(store.id).collection('products').add({
-                category: productCategory,
-                name: productName,
-                price: productPrice
+            const productRef = await firestore().collection('products').add({
+                ...productData
             });
     
-            await productRef.update({
-                quantity: productQuantity
-            });
-
-            await firestore().collection('stores').doc(store.id).collection('stock').doc(productRef.id).set({
-                productId: productRef.id,
-                quantity: productQuantity
+            const productId = productRef.id;
+    
+            stockData.productId = productId;
+    
+            await productRef.collection('stock').doc(stockData.storeId).set({
+                ...stockData
             });
     
             console.log('Produto registrado com sucesso.');
@@ -234,12 +236,12 @@ export default function AuthProvider({ children }:childrenProps) {
             throw error;
         }
     }
-    
 
-    async function updateStockQuantity({ quantity, storeId, productId }: StockProps) {
+    async function updateStockQuantity({ quantity, storeId, productId }: StockData) {
         try {
-            const stockRef = firestore().collection('stores').doc(storeId)
-                              .collection('stock').doc(productId);
+            // Referência para o documento de estoque do produto na loja específica
+            const stockRef = firestore().collection('products').doc(productId)
+                .collection('stock').doc(storeId);
     
             const stockDoc = await stockRef.get();
     
@@ -248,28 +250,95 @@ export default function AuthProvider({ children }:childrenProps) {
                 return;
             }
     
-            const stockData = stockDoc.data();
+            // Atualiza a quantidade de estoque na loja específica
+            await stockRef.update({
+                quantity: quantity
+            });
     
-            if (stockData && stockData.productId) {
-                const currentQuantity = stockData.quantity || 0;
-                const newQuantity = currentQuantity + quantity;
-
-                await stockRef.update({
-                    quantity: newQuantity
+            // Referência para o documento do produto
+            const productRef = firestore().collection('products').doc(productId);
+            const productDoc = await productRef.get();
+    
+            if (!productDoc.exists) {
+                console.log("Documento de produto não encontrado.");
+                return;
+            }
+    
+            const productData = productDoc.data();
+    
+            if (productData && productData.quantity) {
+                // Calcula a nova quantidade total do produto
+                const currentProductQuantity = productData.quantity || 0;
+                const newProductQuantity = currentProductQuantity + (quantity - productData.quantity);
+    
+                // Atualiza a quantidade total do produto
+                await productRef.update({
+                    quantity: newProductQuantity
                 });
     
-                const productRef = firestore().collection('stores').doc(storeId)
-                                   .collection('products').doc(productId);
-    
-                await productRef.set({
-                    ...stockData, 
-                    quantity: newQuantity 
-                }, { merge: true }); 
+                console.log("Quantidade de estoque e quantidade total do produto atualizadas com sucesso.");
             } else {
-                console.log("ProductId não encontrado no documento de estoque.");
+                console.log("Quantidade de produto não encontrada.");
             }
         } catch (error) {
-            console.log("Erro ao atualizar a quantidade de estoque:", error);
+            console.error("Erro ao atualizar a quantidade de estoque:", error);
+        }
+    }
+
+    async function stockTransfer({ quantity, productId, sourceStoreId, destinationStoreId }: StockTransferProps) {
+        try {
+            // Referência para o documento de estoque do produto na loja de origem
+            const sourceStockRef = firestore().collection('stores').doc(sourceStoreId)
+                .collection('stock').doc(productId);
+    
+            // Obtém os dados do estoque na loja de origem
+            const sourceStockDoc = await sourceStockRef.get();
+    
+            if (!sourceStockDoc.exists) {
+                console.log("Documento de estoque na loja de origem não encontrado.");
+                return;
+            }
+    
+            const sourceStockData = sourceStockDoc.data();
+    
+            if (!sourceStockData || !sourceStockData.quantity) {
+                console.log("Quantidade de estoque na loja de origem não encontrada.");
+                return;
+            }
+    
+            // Verifica se há estoque suficiente na loja de origem
+            const currentSourceQuantity = sourceStockData.quantity;
+            if (currentSourceQuantity < quantity) {
+                console.log("Estoque insuficiente na loja de origem.");
+                return;
+            }
+    
+            // Atualiza a quantidade de estoque na loja de origem
+            const newSourceQuantity = currentSourceQuantity - quantity;
+            await sourceStockRef.update({
+                quantity: newSourceQuantity
+            });
+    
+            // Referência para o documento de estoque do produto na loja de destino
+            const destinationStockRef = firestore().collection('stores').doc(destinationStoreId)
+                .collection('stock').doc(productId);
+    
+            // Obtém os dados do estoque na loja de destino
+            const destinationStockDoc = await destinationStockRef.get();
+    
+            // Calcula a nova quantidade de estoque na loja de destino
+            const destinationQuantity = destinationStockDoc.exists ? destinationStockDoc.data()?.quantity || 0 : 0;
+            const newDestinationQuantity = destinationQuantity + quantity;
+    
+            // Atualiza a quantidade de estoque na loja de destino
+            await destinationStockRef.set({
+                productId: productId,
+                quantity: newDestinationQuantity
+            });
+    
+            console.log("Transferência de estoque concluída com sucesso.");
+        } catch (error) {
+            console.error('Erro ao transferir estoque:', error);
         }
     }
 
@@ -290,7 +359,8 @@ export default function AuthProvider({ children }:childrenProps) {
         registerProduct,
         registerCategory,
         registerStore,
-        updateStockQuantity
+        updateStockQuantity,
+        stockTransfer
       };
 
     return (
