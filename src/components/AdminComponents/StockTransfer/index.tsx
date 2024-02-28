@@ -18,12 +18,11 @@ interface StockTransferProps {
 }
 
 interface ProductProps {
-    categoryId: string;
     productId: string;
     storeId: string;
 }
 
-export function StockTransfer({ categoryId, productId, storeId }: ProductProps) {
+export function StockTransfer({ productId, storeId }: ProductProps) {
     const [stockQuantity, setStockQuantity] = useState<number | null>(null);
     const [storeList, setStoreList] = useState<StoreProps[]>([]);
     const [selectedStore, setSelectedStore] = useState<string>('');
@@ -64,10 +63,10 @@ export function StockTransfer({ categoryId, productId, storeId }: ProductProps) 
             }
         };
 
-        if (categoryId && productId && storeId) {
+        if (productId && storeId) {
             fetchProductAndStoreInfo();
         }
-    }, [categoryId, productId, storeId]);
+    }, [productId, storeId]);
 
     const handleStockTransfer = async () => {
         try {
@@ -80,6 +79,7 @@ export function StockTransfer({ categoryId, productId, storeId }: ProductProps) 
                 };
     
                 await stockTransfer(transferProps);
+                setStockQuantity(null);
             }
         } catch (error) {
             console.error('Erro ao transferir estoque:', error);

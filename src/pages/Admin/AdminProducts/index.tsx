@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Button, Text, View, Modal, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import { NewProduct } from "../../../components/AdminComponents/NewProduct";
 import { NewCategory } from "../../../components/AdminComponents/NewCategory";
-import firestore from '@react-native-firebase/firestore';
+import { firebase } from '@react-native-firebase/firestore';
 import { EditProduct } from "../../../components/AdminComponents/EditProduct";
 import Feather from "react-native-vector-icons/Feather";
+import { useAuth } from "../../../contexts/auth";
 
 interface ProductList {
     id: string;
@@ -35,52 +36,31 @@ export default function AdminProducts() {
     const [modalVisible, setModalVisible] = useState(false);
     const [typeModal, setTypeModal] = useState("");
     const [productsList, setProductsList] = useState<ProductList[]>([]);
+    const { deleteProduct } = useAuth();
 
 
     function fetchProducts() {
         setIsLoading(true);
-      
-        const unsubscribeStores = firestore()
-            .collection('stores')
-            .onSnapshot(snapshot => {
-                const allProducts: ProductProps[] = [];
-                const promises: Promise<void>[] = [];
-      
-                snapshot.forEach(storeDoc => {
-                    const productsPromise = storeDoc.ref
-                    .collection('products')
-                    .orderBy('name')
-                    .get()
-                    .then(productsSnapshot => {
-                        productsSnapshot.forEach(productDoc => {
-                            const productData = productDoc.data();
-                            allProducts.push({
-                                id: productDoc.id,
-                                storeId: storeDoc.id,
-                                name: productData.name,
-                                category: productData.category,
-                                quantity: productData.quantity,
-                                price: productData.price,
-                            });
-                        });
+        
+        const unsubProducts = firebase.firestore().collection('products')
+            .onSnapshot(querySnapshot => {
+                const products: ProductList[] = [];
+                querySnapshot.forEach(doc => {
+                    products.push({
+                        id: doc.id,
+                        category: doc.data().category,
+                        name: doc.data().name,
+                        quantity: doc.data().quantity,
+                        price: doc.data().price,
+                        storeId: doc.data().storeId
                     })
-                    .catch(error => {
-                        console.error('Erro ao recuperar os produtos da loja', error);
-                });
-      
-                promises.push(productsPromise);
-            });
-      
-            Promise.all(promises)
-                .then(() => {
-                    setProductsList(allProducts);
-                    setIsLoading(false);
                 })
-                .catch(error => {
-                    console.error('Erro ao processar os produtos', error);
-                });
-            });
-        return unsubscribeStores;
+                setProductsList(products);
+                setIsLoading(false);
+            })
+
+        return () => unsubProducts();
+        
     }
 
 
@@ -112,6 +92,10 @@ export default function AdminProducts() {
         setCurrentProductPrice(price);
         setTypeModal("EditProduct");
         setModalVisible(true);
+    }
+
+    function handleDeleteProduct(productId: string) {
+        deleteProduct(productId);
     }
     
     return (
@@ -188,7 +172,7 @@ export default function AdminProducts() {
                 <View>
                     { typeModal === "NewProduct" && <NewProduct fetchProducts={fetchProducts} />}
                     { typeModal === "NewCategory" && <NewCategory />}
-                    { typeModal === "EditProduct" && <EditProduct productId={currentProductId} category={currentProductCategory} name={currentProductName} quantity={currentProductQuantity} price={currentProductPrice} storeId={currentProductLocalization} />}
+                    { typeModal === "EditProduct" && <EditProduct productId={currentProductId} category={currentProductCategory} name={currentProductName} price={currentProductPrice} />}
                     <Button title="Fechar" onPress={() => {
                         setModalVisible(!modalVisible);
                         setTypeModal("")
@@ -205,10 +189,10 @@ export default function AdminProducts() {
                     borderTopWidth: 3,
                     borderColor: '#2f5d50',
                     borderBottomWidth: 3,
-                    borderBottomLeftRadius: 12,
-                    borderBottomRightRadius: 12,
                     borderTopLeftRadius: 12,
                     borderTopRightRadius: 12,
+                    borderBottomLeftRadius: 12,
+                    borderBottomRightRadius: 12,
                     backgroundColor: '#ffffff',
                 }}
                 contentContainerStyle={{
@@ -243,7 +227,7 @@ export default function AdminProducts() {
                                 >
                                     <View style={{ flex: 1, marginLeft: "2.5%", paddingTop: 10, paddingBottom: 10 }}>
                                         <Text style={{fontSize: 16, fontWeight: "bold"}}>Nome: {product.name}</Text>
-                                        <Text style={{fontSize: 16}}>Preço: R$ {product.price}</Text>
+                                        <Text style={{fontSize: 16}}>Preço: R$ {parseFloat(product.price).toFixed(2)}</Text>
                                     </View>
                                     <View style={{
                                         flexDirection: 'row',
@@ -295,6 +279,7 @@ export default function AdminProducts() {
                                         alignItems: "center",
                                         marginRight: "2.5%"
                                     }} 
+                                    onPress={() => handleDeleteProduct(product.id)}
                                 >
                                     <Feather name="trash" size={22} color="#ffffff" />
                                 </TouchableOpacity>

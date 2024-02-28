@@ -81,7 +81,7 @@ export function NewProduct({ fetchProducts }: { fetchProducts: () => void }) {
             category: productCategory,
             name: productName,
             quantity: Number(productQuantity),
-            price: Number(productPrice)
+            price: productPrice
         };
     
         const stockData = {

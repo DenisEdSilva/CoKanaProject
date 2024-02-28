@@ -36,7 +36,7 @@ interface UserProfile {
 interface ProductData {
     category: string;
     name: string;
-    price: number;
+    price: string;
     quantity: number;
 }
 
@@ -53,6 +53,13 @@ interface StockTransferProps {
     destinationStoreId: string;
 }
 
+interface EditProductProps {
+    productId: string;
+    category: string;
+    name: string;
+    price: string;
+}
+
 interface AuthContextType {
     signed: boolean;
     user: User | null;
@@ -67,6 +74,8 @@ interface AuthContextType {
     registerStore: ({ newStore }: { newStore: string }) => Promise<void>;
     updateStockQuantity: ({ quantity, productId }: StockData) => Promise<void>;
     stockTransfer: ({ quantity, productId, sourceStoreId, destinationStoreId }: StockTransferProps) => Promise<void>;
+    editProduct: ({ productId, category, name, price }: EditProductProps) => Promise<void>;
+    deleteProduct: (productId: string) => Promise<void>;
 }
 
   export const AuthContext = createContext<AuthContextType>({
@@ -82,7 +91,9 @@ interface AuthContextType {
     registerCategory: async () => {},
     registerStore: async () => {},
     updateStockQuantity: async () => {},
-    stockTransfer: async () => {}
+    stockTransfer: async () => {},
+    editProduct: async () => {},
+    deleteProduct: async () => {},
   });
 
 export default function AuthProvider({ children }:childrenProps) {
@@ -239,7 +250,6 @@ export default function AuthProvider({ children }:childrenProps) {
 
     async function updateStockQuantity({ quantity, storeId, productId }: StockData) {
         try {
-            // Referência para o documento de estoque do produto na loja específica
             const stockRef = firestore().collection('products').doc(productId)
                 .collection('stock').doc(storeId);
     
@@ -250,12 +260,15 @@ export default function AuthProvider({ children }:childrenProps) {
                 return;
             }
     
-            // Atualiza a quantidade de estoque na loja específica
+            const stockData = stockDoc.data();
+            const previousStockQuantity = stockData?.quantity || 0;
+    
+            const newStockQuantity = previousStockQuantity + quantity;
+    
             await stockRef.update({
-                quantity: quantity
+                quantity: newStockQuantity
             });
     
-            // Referência para o documento do produto
             const productRef = firestore().collection('products').doc(productId);
             const productDoc = await productRef.get();
     
@@ -265,83 +278,121 @@ export default function AuthProvider({ children }:childrenProps) {
             }
     
             const productData = productDoc.data();
+            const previousProductQuantity = productData?.quantity || 0;
     
-            if (productData && productData.quantity) {
-                // Calcula a nova quantidade total do produto
-                const currentProductQuantity = productData.quantity || 0;
-                const newProductQuantity = currentProductQuantity + (quantity - productData.quantity);
+            const newProductQuantity = previousProductQuantity + quantity;
     
-                // Atualiza a quantidade total do produto
-                await productRef.update({
-                    quantity: newProductQuantity
-                });
+            await productRef.update({
+                quantity: newProductQuantity
+            });
     
-                console.log("Quantidade de estoque e quantidade total do produto atualizadas com sucesso.");
-            } else {
-                console.log("Quantidade de produto não encontrada.");
-            }
+            console.log("Quantidade de estoque e quantidade total do produto atualizadas com sucesso.");
         } catch (error) {
             console.error("Erro ao atualizar a quantidade de estoque:", error);
         }
     }
+    
+    
+    
+    
 
     async function stockTransfer({ quantity, productId, sourceStoreId, destinationStoreId }: StockTransferProps) {
+        console.log(quantity, productId, sourceStoreId, destinationStoreId)
+
         try {
-            // Referência para o documento de estoque do produto na loja de origem
+            // Referência para o documento da loja de origem
             const sourceStockRef = firestore().collection('stores').doc(sourceStoreId)
-                .collection('stock').doc(productId);
-    
-            // Obtém os dados do estoque na loja de origem
             const sourceStockDoc = await sourceStockRef.get();
-    
+
             if (!sourceStockDoc.exists) {
                 console.log("Documento de estoque na loja de origem não encontrado.");
                 return;
             }
-    
             const sourceStockData = sourceStockDoc.data();
-    
-            if (!sourceStockData || !sourceStockData.quantity) {
-                console.log("Quantidade de estoque na loja de origem não encontrada.");
+
+            // Referência para o documento do estoque do produto na loja de origem
+            const updateSourceStock = firestore().collection('products').doc(productId)
+                .collection('stock').doc(sourceStoreId);
+
+            const updateSourceStockDoc = await updateSourceStock.get();
+            const updateSourceStockData = updateSourceStockDoc.data();
+
+            // atualiza a quantidade atual da loja de origem
+            if (updateSourceStockData) {
+                const newSourceQuantity = updateSourceStockData.quantity - quantity;
+                await updateSourceStock.update({ quantity: newSourceQuantity });
+            }
+
+
+            // Referência para o documento da loja destino
+            const destinationStoreRef = firestore().collection('stores').doc(destinationStoreId)
+            const destinationStoreDoc = await destinationStoreRef.get();
+            if (!destinationStoreDoc.exists) {
+                console.log("Documento de estoque na loja de destino não encontrado.");
                 return;
             }
-    
-            // Verifica se há estoque suficiente na loja de origem
-            const currentSourceQuantity = sourceStockData.quantity;
-            if (currentSourceQuantity < quantity) {
-                console.log("Estoque insuficiente na loja de origem.");
-                return;
+            const destinationStockData = destinationStoreDoc.data();
+
+            // Referência para o documento do estoque do produto na loja de destino
+            const updateDestinationStock = firestore().collection('products').doc(productId)
+                .collection('stock').doc(destinationStoreId);
+
+            const updateDestinationStockDoc = await updateDestinationStock.get();
+            const updateDestinationStockData = updateDestinationStockDoc.data();
+
+            // Verificar se o documento de estoque da loja de destino existe
+            if (updateDestinationStockDoc.exists) {
+                const updateDestinationStockData = updateDestinationStockDoc.data();
+                const newDestinationQuantity = updateDestinationStockData?.quantity + quantity;
+
+                // Atualizar os dados do documento de estoque da loja de destino
+                await updateDestinationStock.update({ quantity: newDestinationQuantity });
+            } else {
+                // Caso o documento de estoque da loja de destino não exista, criá-lo
+                await updateDestinationStock.set({ 
+                    storeId: destinationStoreId,
+                    productId: productId,
+                    quantity: quantity 
+                });
             }
     
-            // Atualiza a quantidade de estoque na loja de origem
-            const newSourceQuantity = currentSourceQuantity - quantity;
-            await sourceStockRef.update({
-                quantity: newSourceQuantity
-            });
-    
-            // Referência para o documento de estoque do produto na loja de destino
-            const destinationStockRef = firestore().collection('stores').doc(destinationStoreId)
-                .collection('stock').doc(productId);
-    
-            // Obtém os dados do estoque na loja de destino
-            const destinationStockDoc = await destinationStockRef.get();
-    
-            // Calcula a nova quantidade de estoque na loja de destino
-            const destinationQuantity = destinationStockDoc.exists ? destinationStockDoc.data()?.quantity || 0 : 0;
-            const newDestinationQuantity = destinationQuantity + quantity;
-    
-            // Atualiza a quantidade de estoque na loja de destino
-            await destinationStockRef.set({
-                productId: productId,
-                quantity: newDestinationQuantity
-            });
-    
-            console.log("Transferência de estoque concluída com sucesso.");
         } catch (error) {
-            console.error('Erro ao transferir estoque:', error);
+            console.error('Erro ao transferir estoque:', error);2
         }
     }
 
+    async function editProduct({ productId, category, name, price }: EditProductProps) {
+        try {
+            firestore().collection('products').doc(productId).update({
+                category: category, 
+                name: name,
+                price: price,
+            }).catch(error => {
+                console.log(error);
+            });
+        } catch (error) {
+            console.log("Falha ao editar o produto:", error);
+        }
+    } 
+
+    async function deleteProduct(productId: string) {
+        try {
+            const productRef = firestore().collection('products').doc(productId);
+            
+            const stockSnapshot = await productRef.collection('stock').get();
+            const batch = firestore().batch();
+            stockSnapshot.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+            
+            await productRef.delete();
+            
+            console.log('Produto excluído com sucesso');
+        } catch (error) {
+            console.error('Erro ao excluir o produto:', error);
+        }
+    }
 
     async function storageUser(data: User) {
         await AsyncStorage.setItem("@cokana", JSON.stringify(data))
@@ -360,7 +411,9 @@ export default function AuthProvider({ children }:childrenProps) {
         registerCategory,
         registerStore,
         updateStockQuantity,
-        stockTransfer
+        stockTransfer,
+        editProduct,
+        deleteProduct
       };
 
     return (

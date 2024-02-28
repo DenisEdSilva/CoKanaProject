@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity, Modal } from 'react-native';
 import { firebase } from '@react-native-firebase/firestore';
 import { useRoute } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { StockTransfer } from '../StockTransfer';
+import { ReplenishProduct } from '../ReplenishProduct';
 
 interface RouteParams {
     productId: string;
@@ -11,6 +14,10 @@ export function ProductItem() {
     const route = useRoute();
     const { productId } = route.params as RouteParams;
     const [stores, setStores] = useState<any[]>([]);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedStore, setSelectedStore] = useState<string>('');
+    const [modalType, setModalType] = useState<string>('');
+
 
     useEffect(() => {
         const fetchStores = async () => {
@@ -47,6 +54,16 @@ export function ProductItem() {
         fetchStores();
     }, [productId]);
 
+    const openModal = (store: any, type: string) => {
+        setSelectedStore(store.id);
+        setModalType(type);
+        setModalVisible(true);
+    };
+
+    const handleCloseModal = () => {
+        setModalVisible(false);
+    };
+
     return (
         <View>
             <Text
@@ -63,8 +80,9 @@ export function ProductItem() {
                 <View 
                     key={store.id}
                     style={{
-                        flexDirection: 'column',
+                        flexDirection: 'row',
                         alignItems: 'stretch',
+                        justifyContent: 'space-between',
                         backgroundColor: '#ffffff', 
                         shadowColor: "#000",
                         shadowOffset: { width: 0, height: 2 },
@@ -74,12 +92,60 @@ export function ProductItem() {
                         marginBottom: 15,
                         elevation: 6,
                     }}
-                
                 >
-                    <Text style={{ fontSize: 18}}><Text style={{ fontSize: 20, fontWeight: 'bold', color: '#333333'}}>Nome: </Text>{store.storeName}</Text>
-                    <Text style={{ fontSize: 18}}><Text style={{ fontSize: 20, fontWeight: 'bold', color: '#333333'}}>Quantidade: </Text>{store.quantity}</Text>
-                </View>
+                    <View>
+                        <Text style={{ fontSize: 18}}><Text style={{ fontSize: 20, fontWeight: 'bold', color: '#333333'}}>Nome: </Text>{store.storeName}</Text>
+                        <Text style={{ fontSize: 18}}><Text style={{ fontSize: 20, fontWeight: 'bold', color: '#333333'}}>Quantidade: </Text>{store.quantity}</Text>
+                    </View>
+                    <View 
+                        style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignSelf: 'center',
+                            marginRight: 10,
+                            padding: 10
+                        }}
+                    >
+                        <TouchableOpacity
+                            onPress={() => openModal(store, "StockTransfer")}
+                            style={{
+                                marginRight: 10,
+                                padding: 10,
+                                alignSelf: 'center',
+                                backgroundColor: '#39e463',
+                            }}
+                        >
+                            <Icon name="swap-horiz" size={24} color="#333333" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => openModal(store, "ReplenishProduct")}
+                            style={{
+                                marginRight: 10,
+                                padding: 10,
+                                alignSelf: 'center',
+                                backgroundColor: '#39e463',
+                            }}
+                        >
+                            <Icon name="add" size={24} color="#333333" />
+                        </TouchableOpacity>
+                    </View>
+                </View>                
             ))}
+            <Modal
+                animationType="fade"
+                transparent={false}
+                visible={modalVisible}
+                onRequestClose={handleCloseModal}
+            >
+                <View style={{marginTop: 35 }}>
+                    {modalType === 'StockTransfer' && (
+                       <StockTransfer storeId={selectedStore} productId={productId} />
+                    )}
+                    {modalType === 'ReplenishProduct' && (
+                       <ReplenishProduct storeId={selectedStore} productId={productId} />
+                    )}
+                </View>
+            </Modal>
         </View>
     );
 }

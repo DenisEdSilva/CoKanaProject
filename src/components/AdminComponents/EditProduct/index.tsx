@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import firestore from '@react-native-firebase/firestore'
 import { Picker } from '@react-native-picker/picker';
+import { useAuth } from '../../../contexts/auth';
 
 interface StoreId {
     id: string
@@ -13,23 +14,19 @@ interface Category {
     name: string
 }
 
-export function EditProduct({ productId, category, name, quantity, price, storeId }: { productId: string, category: string, name: string, quantity: string, price: string, storeId: string }) {
+export function EditProduct({ productId, category, name, price }: { productId: string, category: string, name: string, price: string}) {
     const [categories, setCategories] = useState<Category[]>([])
-    const [storeIds, setStoreIds] = useState<StoreId[]>([])
     const [currentProductCategory, setCurrentProductCategory] = useState(category)
-    const [currentProductStoreId, setCurrentProductStoreId] = useState(storeId)
     const [currentProductName, setCurrentProductName] = useState(name)
     const [currentProductPrice, setCurrentProductPrice] = useState(price)
     const [newProductCategory, setNewProductCategory] = useState(category)
-    const [newProductStoreId, setNewProductStoreId] = useState(storeId)
     const [newProductName, setNewProductName] = useState(name)
-    const [newProductQuantity, setNewProductQuantity] = useState(quantity)
     const [newProductPrice, setNewProductPrice] = useState(price)
+    const { editProduct } = useAuth();
 
 
     useEffect(() => {
         const currentCategoryId = category;
-        const currentStoreIdId = storeId;
 
         const categoriesRef = firestore().collection('categories')
             .orderBy('index');
@@ -44,29 +41,15 @@ export function EditProduct({ productId, category, name, quantity, price, storeI
             setCurrentProductCategory(currentCategoryId);
             setCategories(categoriesList);
         });
-
-        const StoreIdsRef = firestore().collection('stores')
-            .orderBy('index');
-        StoreIdsRef.get().then((querySnapshot) => {
-        const StoreIdsList = querySnapshot.docs.map((doc) => {
-            return {
-                id: doc.id,
-                name: doc.data().name
-            };
-        });
-        setCurrentProductStoreId(currentStoreIdId);
-        setStoreIds(StoreIdsList);
-        });
+        
     }, []);
 
-    function editProduct(productId: string) {
-        firestore().collection('products').doc(productId).update({
-            category: newProductCategory, 
-            storeId: newProductStoreId, 
+    function handleEditProduct(productId: string) {
+        editProduct({
+            productId,
+            category: newProductCategory,
             name: newProductName,
-            price: newProductPrice,
-        }).catch(error => {
-            console.log(error);
+            price: newProductPrice
         });
     }
     
@@ -102,16 +85,6 @@ export function EditProduct({ productId, category, name, quantity, price, storeI
                         ))}
                     </Picker>
                 </View>
-                <View>
-                    <Picker
-                        selectedValue={currentProductStoreId}
-                        onValueChange={(itemValue, itemIndex) => {setCurrentProductStoreId(itemValue); setNewProductStoreId(itemValue)}}
-                    >
-                        {storeIds.filter((storeId) => storeId.name).map((StoreId) => (
-                            <Picker.Item key={StoreId.id} label={StoreId.name} value={StoreId.id} />
-                        ))}
-                    </Picker>
-                </View>
                 <TextInput 
                     placeholder="Nome do Produto" 
                     value={currentProductName} 
@@ -120,7 +93,7 @@ export function EditProduct({ productId, category, name, quantity, price, storeI
                 <TextInput
                     placeholder="Preço"
                     keyboardType='numeric'
-                    value={`R$ ${currentProductPrice}`}
+                    value={`R$ ${parseFloat(currentProductPrice).toFixed(2)}`}
                     onChangeText={handlePriceChange}
                 />
             </View>
@@ -133,10 +106,10 @@ export function EditProduct({ productId, category, name, quantity, price, storeI
                     borderTopLeftRadius: 6, 
                     borderTopRightRadius: 6,
                     margin: 15,
-                    backgroundColor: "#52a3f3",
+                    backgroundColor: "#3c7a5e",
                     alignItems: "center"
                 }}  
-                onPress={() => editProduct(productId)}
+                onPress={() => handleEditProduct(productId)}
             >
                 <Text style={{color: "#fff", fontWeight: "bold", fontSize: 16}} >Concluir Edição</Text>
             </TouchableOpacity>

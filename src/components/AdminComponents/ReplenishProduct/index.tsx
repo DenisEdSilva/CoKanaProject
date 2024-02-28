@@ -4,12 +4,11 @@ import { firebase } from '@react-native-firebase/firestore';
 import { useAuth } from '../../../contexts/auth';
 
 interface ProductProps {
-    categoryId: string;
     productId: string;
     storeId: string;
 }
 
-export function ReplenishProduct({ categoryId, productId, storeId }: ProductProps) {
+export function ReplenishProduct({ productId, storeId }: ProductProps) {
     const [quantity, setQuantity] = useState<number | null>(null);
     const [productInfo, setProductInfo] = useState<any>(null);
     const [storeInfo, setStoreInfo] = useState<any>(null);
@@ -27,6 +26,7 @@ export function ReplenishProduct({ categoryId, productId, storeId }: ProductProp
                     console.log('Produto não encontrado');
                 }
 
+                console.log(storeId)
                 const storeRef = firebase.firestore().collection('stores').doc(storeId);
                 const storeSnapshot = await storeRef.get();
                 if (storeSnapshot.exists) {
@@ -38,6 +38,7 @@ export function ReplenishProduct({ categoryId, productId, storeId }: ProductProp
                 const stockRef = firebase.firestore().collection('products').doc(productId)
                                    .collection('stock').doc(storeId);
                 const stockSnapshot = await stockRef.get();
+                console.log('Dados do estoque:', stockSnapshot.data());
                 if (stockSnapshot.exists) {
                     setStockQuantity(stockSnapshot.data()?.quantity);
                 } else {
@@ -48,10 +49,10 @@ export function ReplenishProduct({ categoryId, productId, storeId }: ProductProp
             }
         };
 
-        if (categoryId && productId && storeId) {
+        if (productId && storeId) {
             fetchProductAndStoreInfo();
         }
-    }, [categoryId, productId, storeId]);
+    }, [productId, storeId]);
 
     const handleReplenishProduct = async () => {
         try {
@@ -76,7 +77,13 @@ export function ReplenishProduct({ categoryId, productId, storeId }: ProductProp
                 placeholder="Quantidade"
                 keyboardType="numeric"
                 value={quantity?.toString() || ''}
-                onChangeText={text => setQuantity(parseInt(text))}
+                onChangeText={text => {
+                    if (text === '') {
+                        setQuantity(null);
+                    } else {
+                        setQuantity(parseInt(text));
+                    }
+                }}
             />
             <Button title="Adicionar produto" onPress={handleReplenishProduct} />
         </View>
