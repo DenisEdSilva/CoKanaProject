@@ -12,8 +12,23 @@ import AdminPerfil from "../pages/Admin/AdminPerfil";
 import { ProductList } from "../components/AdminComponents/ProductList";
 import { ProductItem } from '../components/AdminComponents/ProductItem';
 import AdminStock from "../pages/Admin/AdminStock";
+import { TouchableOpacity } from "react-native";
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const Tab = createBottomTabNavigator();
+
+interface AddButtonProps {
+    onPress: () => void;
+    iconName: string;
+  }
+
+function Button({ onPress, iconName, navigation }: AddButtonProps & { navigation: any }) {
+    return (
+        <TouchableOpacity onPress={onPress} >
+            <Icon name={iconName} size={24} color="black" />
+        </TouchableOpacity>
+    );
+  }
 
 export function SellerRoute() {
     return (
@@ -29,37 +44,32 @@ export function SellerRoute() {
                 tabBarLabelStyle: {
                     fontSize: 20,
                     fontWeight: "bold"
-                },
-                tabBarIconStyle: ({ display: 'none' }),
+                }
             }}
         >
             <Tab.Screen
                 name="Home"
                 component={Home}
+                options={({ navigation }) => ({
+                    tabBarIcon: () => <Button iconName="home" onPress={() => navigation.navigate('Home')} navigation={navigation} />,
+                    tabBarLabel: () => null,
+                })}
             />
             <Tab.Screen
-                name="+"
+                name="adicionar"
                 component={NewItem}
-                options={{
-                    tabBarLabelStyle: {
-                        fontSize: 45,
-                    },   
-                    tabBarItemStyle: {
-                        backgroundColor: "#80ff80",
-                        borderTopLeftRadius: 40,
-                        borderTopRightRadius: 40,
-                        height: 60,
-                        bottom: 10,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderWidth: 3,
-                        borderColor: "#000000",
-                    }
-                }} 
+                options={({ navigation }) => ({
+                    tabBarIcon: () => <Button iconName="add" onPress={() => navigation.navigate('adicionar')} navigation={navigation} />,
+                    tabBarLabel: () => null,
+                })}
             />
             <Tab.Screen
                 name="Perfil"
                 component={Profile}
+                options={({ navigation }) => ({
+                    tabBarIcon: () => <Button iconName="person" onPress={() => navigation.navigate('Perfil')} navigation={navigation} />,
+                    tabBarLabel: () => null,
+                })}
             />
         </Tab.Navigator>
     )

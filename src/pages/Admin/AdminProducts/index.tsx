@@ -44,23 +44,24 @@ export default function AdminProducts() {
         
         const unsubProducts = firebase.firestore().collection('products')
             .onSnapshot(querySnapshot => {
-                const products: ProductList[] = [];
-                querySnapshot.forEach(doc => {
-                    products.push({
-                        id: doc.id,
-                        category: doc.data().category,
-                        name: doc.data().name,
-                        quantity: doc.data().quantity,
-                        price: doc.data().price,
-                        storeId: doc.data().storeId
+                if (querySnapshot) { // Verificar se querySnapshot não é null
+                    const products: ProductList[] = [];
+                    querySnapshot.forEach(doc => {
+                        products.push({
+                            id: doc.id,
+                            category: doc.data().category,
+                            name: doc.data().name,
+                            quantity: doc.data().quantity,
+                            price: doc.data().price,
+                            storeId: doc.data().storeId
+                        })
                     })
-                })
-                setProductsList(products);
+                    setProductsList(products);
+                }
                 setIsLoading(false);
             })
-
+    
         return () => unsubProducts();
-        
     }
 
 
