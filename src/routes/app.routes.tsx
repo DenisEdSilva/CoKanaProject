@@ -9,13 +9,15 @@ import Profile from "../pages/Seller/Profile";
 import AdminHome from "../pages/Admin/AdminHome";
 import AdminProducts from "../pages/Admin/AdminProducts";
 import AdminPerfil from "../pages/Admin/AdminPerfil";
-import { ProductList } from "../components/AdminComponents/ProductList";
+import { ProductList as AdminProductList } from "../components/AdminComponents/ProductList";
+import { ProductList as SellerProductList } from "../components/SellerComponents/ProductList";
 import { ProductItem } from '../components/AdminComponents/ProductItem';
 import AdminStock from "../pages/Admin/AdminStock";
 import { TouchableOpacity } from "react-native";
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 interface AddButtonProps {
     onPress: () => void;
@@ -57,7 +59,7 @@ export function SellerRoute() {
             />
             <Tab.Screen
                 name="adicionar"
-                component={NewItem}
+                component={SellerNewItemStack}
                 options={({ navigation }) => ({
                     tabBarIcon: () => <Button iconName="add" onPress={() => navigation.navigate('adicionar')} navigation={navigation} />,
                     tabBarLabel: () => null,
@@ -113,16 +115,25 @@ export function AdminRoute() {
     )
 }
 
-const Stack = createNativeStackNavigator();
-
 const AdminStockStack = () => {
   return (
     <Stack.Navigator  
         screenOptions={{ headerShown: false }}  
     >
         <Stack.Screen name="AdminStock" component={AdminStock} />
-        <Stack.Screen name="ProductList" component={ProductList} />
+        <Stack.Screen name="ProductList" component={AdminProductList} />
         <Stack.Screen name="ProductItem" component={ProductItem} />
+    </Stack.Navigator>
+  );
+};
+
+const SellerNewItemStack = () => {
+  return (
+    <Stack.Navigator  
+        screenOptions={{ headerShown: false }}  
+    >
+        <Stack.Screen name="NewItem" component={NewItem} />
+        <Stack.Screen name="ProductList" component={SellerProductList} />
     </Stack.Navigator>
   );
 };

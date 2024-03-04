@@ -1,9 +1,10 @@
-import React, { ReactNode, createContext, useContext, useEffect, useState } from "react";
+import React,{ ReactNode, createContext, useContext, useEffect, useState } from "react";
 
 import auth from "@react-native-firebase/auth";
 import firestore from "@react-native-firebase/firestore";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Alert } from "react-native";
 
 interface User {
     uid: string;
@@ -76,6 +77,7 @@ interface AuthContextType {
     stockTransfer: ({ quantity, productId, sourceStoreId, destinationStoreId }: StockTransferProps) => Promise<void>;
     editProduct: ({ productId, category, name, price }: EditProductProps) => Promise<void>;
     deleteProduct: (productId: string) => Promise<void>;
+    registerRequest: (quantities: {[keys: string]: number }) => Promise<void>;
 }
 
   export const AuthContext = createContext<AuthContextType>({
@@ -94,6 +96,7 @@ interface AuthContextType {
     stockTransfer: async () => {},
     editProduct: async () => {},
     deleteProduct: async () => {},
+    registerRequest: async () => {},
   });
 
 export default function AuthProvider({ children }:childrenProps) {
@@ -398,6 +401,32 @@ export default function AuthProvider({ children }:childrenProps) {
         await AsyncStorage.setItem("@cokana", JSON.stringify(data))
     }
 
+    async function registerRequest(quantities: {[keys: string]: number }) {
+        const createdAt = firestore.FieldValue.serverTimestamp()
+        const expirationTime = new Date();
+        expirationTime.setHours(expirationTime.getHours() + 18);
+
+        try {
+            const productsToCheckout = Object.keys(quantities).filter(productId => quantities[productId] > 0);
+            
+            const order = {
+                createdAt,
+                expirationTime,
+                items: productsToCheckout.map(productId => ({
+                    productId,
+                    quantity: quantities[productId],
+                })),
+            };
+
+            await firestore().collection('requests').add(order);
+    
+            Alert.alert("Sucesso", "Seu pedido foi realizado com sucesso!");
+        } catch (error) {
+            console.log("Erro ao registrar pedido:", error);
+            Alert.alert("Erro", "Ocorreu um erro ao registrar seu pedido. Tente novamente mais tarde.");
+        }
+    }
+
     const contextValue: AuthContextType = {
         signed: !!user,
         user,
@@ -413,7 +442,8 @@ export default function AuthProvider({ children }:childrenProps) {
         updateStockQuantity,
         stockTransfer,
         editProduct,
-        deleteProduct
+        deleteProduct,
+        registerRequest
       };
 
     return (

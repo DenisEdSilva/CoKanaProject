@@ -5,6 +5,7 @@ import { useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { StockTransfer } from '../StockTransfer';
 import { ReplenishProduct } from '../ReplenishProduct';
+import { useNavigation } from '@react-navigation/native';
 
 interface RouteParams {
     productId: string;
@@ -17,6 +18,7 @@ export function ProductItem() {
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedStore, setSelectedStore] = useState<string>('');
     const [modalType, setModalType] = useState<string>('');
+    const nav = useNavigation<any>();
 
 
     useEffect(() => {
@@ -66,16 +68,25 @@ export function ProductItem() {
 
     return (
         <View>
-            <Text
+            <View 
                 style={{ 
-                    fontSize: 20, 
-                    fontWeight: 'bold',
-                    color: '#333333',
-                    alignSelf: 'center',
-                    paddingTop: 20,
-                    paddingBottom: 20
+                    flexDirection: 'row',
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    marginBottom: 35, 
+                    paddingLeft: 10,
+                    paddingTop: 25
                 }}
-            >Lojas</Text>
+            >
+                <TouchableOpacity 
+                    style={{width: "12.5%"}}
+                    onPress={() => nav.goBack()}
+                >
+                    <Icon name="arrow-back" size={30} color="#2f5d50"/>
+                </TouchableOpacity>
+                <Text style={{fontSize: 24, fontWeight: "bold", flex: 1, textAlign: 'center', color: "#2f5d50"}}>Lojas</Text>
+                <View style={{width: "12.5%"}}></View>
+            </View>
             {stores.map(store => (
                 <View 
                     key={store.id}

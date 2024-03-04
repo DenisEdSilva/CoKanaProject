@@ -70,11 +70,14 @@ export function ProductList() {
                             paddingTop: 25
                         }}
                     >
-                        <TouchableOpacity>
+                       <TouchableOpacity 
+                            style={{width: "12.5%"}}
+                            onPress={() => nav.goBack()}
+                        >
                             <Icon name="arrow-back" size={30} color="#2f5d50"/>
                         </TouchableOpacity>
-                        <Text style={{fontSize: 24, fontWeight: "bold", marginLeft: 10, color: "#2f5d50"}}>Produtos</Text>
-                        <View style={{width: 30}}></View>
+                        <Text style={{fontSize: 24, fontWeight: "bold", flex: 1, textAlign: 'center', color: "#2f5d50"}}>Produtos</Text>
+                        <View style={{width: "12.5%"}}></View>
                     </View>
                     {productList.slice().sort((a, b) => a.name.localeCompare(b.name)).map(product => (
                         <View 

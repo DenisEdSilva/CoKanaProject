@@ -1,9 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, ActivityIndicator, Modal, Button, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, ActivityIndicator, Modal, Button } from 'react-native';
 import { firebase } from '@react-native-firebase/auth';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
-import Feather from 'react-native-vector-icons/Feather';
-import Icon from 'react-native-vector-icons/MaterialIcons'
 import { StockTransfer } from '../../../components/AdminComponents/StockTransfer';
 import { ReplenishProduct } from '../../../components/AdminComponents/ReplenishProduct';
 import { CategoryList } from '../../../components/AdminComponents/CategoryList';
